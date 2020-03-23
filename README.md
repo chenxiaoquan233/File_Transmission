@@ -4,7 +4,7 @@
 
 厦门大学信息学院计算机网络课程项目
 
-作者： [chenxiaoquan233](https://github.com/chenxiaoquan233),[fester](https://github.com/ferster),[jrsmith12138](https://github.com/jrsmith12138),[firstday1](https://github.com/firstday1),[luckydog691](https://github.com/luckydog691)
+作者： [chenxiaoquan233](https://github.com/chenxiaoquan233),[fester](https://github.com/ferster),[jrsmith12138](https://github.com/jrsmith12138),[firstday1](https://github.com/firstday1),[luckydog691](https://github.com/luckydog691),[Morstr](https://github.com/Morstr)
 
 
 <!-- TOC -->
@@ -14,7 +14,7 @@
 - [简介](#简介)
 - [编译环境](#编译环境)
 - [运行环境](#运行环境)
-- [使用教程](#使用教程)
+- [使用方法](#使用方法)
 - [Change log](#change-log)
 - [TODO](#TODO)
 - [交流反馈](#交流反馈)
@@ -32,23 +32,28 @@
 2.发送包  
 3.接收包  
 4.写入文件
-## 交流反馈(排名不分先后)
+## 交流反馈
+(排名不分先后)
 chenxiaoquan233:  
 邮箱: chenxiaoquan233@gmail.com  
 QQ: 770355275
 
 fester:  
 邮箱: 1014483832@qq.com  
-QQ: 1014483832
-
+QQ: 1014483832  
+  
 jrsmith12138:  
 邮箱: 849070287@qq.com  
-QQ: 849070287
-
+QQ: 849070287  
+  
 firstday1:  
 邮箱: 2602164122@qq.com  
-QQ: 2602164122
-
-luckydog691:
-邮箱: 1256161580@qq.com
-QQ: 1256161580
+QQ: 2602164122  
+  
+luckydog691:  
+邮箱: 1256161580@qq.com  
+QQ: 1256161580  
+  
+Morstr:  
+邮箱: 260603965@qq.com  
+QQ: 260603965
