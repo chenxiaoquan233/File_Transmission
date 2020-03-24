@@ -8,7 +8,7 @@
 #pragma comment (lib, "ws2_32.lib")
 #endif
 
-#ifdef _linux_
+#ifdef __linux__
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
