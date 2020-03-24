@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <iostream>
 #ifdef _WIN32
 #include <winsock.h>
 #pragma comment (lib, "ws2_32.lib")
@@ -17,5 +18,6 @@
 //set common prefixes here
 class base
 {
-	const int MAX_PACKET_DATA_BYTE_LENGTH = 0;//to be modified
+	protected:
+		const int MAX_PACKET_DATA_BYTE_LENGTH = 38;//to be modified
 };
