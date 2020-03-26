@@ -34,7 +34,7 @@ int Client::client(char* input_file_name)
     while (!feof(input_file))
     {
         read_file(input_file_name);
-        //std::cout << file_slice << " !! ";    //内容测试
+        std::cout << file_slice << " !! ";    //内容测试
     }
     return 0;
 }
@@ -48,9 +48,10 @@ bool Client::read_file(char* input_file_name)
     if (isfirstread == true)
     {
         int len_of_text = filesize(input_file_name);
-        char start = 64;									//符号@
+        char start = 64;//符号@
+        char start2 = 63;
         char* len_text = new char[MAX_PACKET_DATA_BYTE_LENGTH];
-        sprintf(len_text, "%s%d%c",input_file_name, len_of_text, start);		//将“文件名长度@”加入数组
+        sprintf(len_text, "%s%c%d%c",input_file_name,start2, len_of_text, start);		//将“文件名$长度@”加入数组
         res = fread(file_slice, 1, MAX_PACKET_DATA_BYTE_LENGTH - strlen(len_text), input_file);
         res += strlen(len_text);
         int len_tmp = strlen(len_text);
