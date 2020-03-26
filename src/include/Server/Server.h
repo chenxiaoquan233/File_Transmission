@@ -18,7 +18,8 @@ public:
 	bool set_listen();
 
 	//read the information of file head(FILE path & FILE length)
-	bool read_FILEinformation(FILE* &output_file, char* &origin_data, int& data_length);
+	//return length of infomation
+	int read_FILEinformation(FILE* &output_file, char* origin_data, int &data_length);
 
 	//write file slice to file
 	//return status
