@@ -4,11 +4,18 @@ class Server : public base
 {
 private:
 	char* file_slice;
-
+	sockaddr_in serv_addr;
+	FILE* output_file = nullptr;
+#ifdef _WIN32
+     	SOCKET sock;
+#endif
+#ifdef __linux__
+	    int sock;
+#endif
 public:
 	//constructor
 	Server();
-
+	Server(const char* ip_addr, int port);
 	//destruuctor
 	~Server();
 	

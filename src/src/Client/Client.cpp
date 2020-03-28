@@ -1,11 +1,9 @@
 #include "../../include/Client/Client.h"
 
-
 Client::Client()
 {
 
 }
-
 Client::Client(const char* ip_addr, int port)
 {
 #ifdef _WIN32
@@ -16,18 +14,15 @@ Client::Client(const char* ip_addr, int port)
 #ifdef __linux__
     sock = socket(AF_INET, SOCK_DGRAM, 0);
 #endif
-
     memset(&serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family = PF_INET;
     serv_addr.sin_addr.s_addr = inet_addr(ip_addr);
     serv_addr.sin_port = htons(port);
 }
-
 Client::~Client()
 {
 
 }
-
 int Client::client(char* input_file_name)
 {
     input_file = fopen(input_file_name, "rb");
@@ -38,8 +33,6 @@ int Client::client(char* input_file_name)
     }
     return 0;
 }
-
-
 bool Client::read_file(char* input_file_name)
 {
     file_slice = new char[MAX_PACKET_DATA_BYTE_LENGTH];
