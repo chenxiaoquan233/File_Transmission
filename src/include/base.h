@@ -18,5 +18,5 @@
 class base
 {
 	protected:
-		const int MAX_PACKET_DATA_BYTE_LENGTH = 38;//to be modified
+		const int MAX_PACKET_DATA_BYTE_LENGTH = 1400;//to be modified
 };

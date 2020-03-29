@@ -7,22 +7,24 @@ private:
 	sockaddr_in serv_addr;
 	FILE* output_file = nullptr;
 #ifdef _WIN32
-     	SOCKET sock;
+    SOCKET sock;
 #endif
 #ifdef __linux__
-	    int sock;
+	int sock;
 #endif
 public:
 	//constructor
 	Server();
-	Server(const char* ip_addr, int port);
 	//destruuctor
 	~Server();
 	
 	//set up listen on specified port
 	//parse data and store in file_slice
 	//return status
-	bool set_listen();
+	bool set_listen(int port);
+
+	//start listen
+	bool recv_packet();
 
 	//read the information of file head(FILE path & FILE length)
 	//return length of infomation

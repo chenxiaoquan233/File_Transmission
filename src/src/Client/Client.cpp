@@ -4,35 +4,19 @@ Client::Client()
 {
 
 }
-Client::Client(const char* ip_addr, int port)
-{
-    printf("set Client\n");
-#ifdef _WIN32
-    WSADATA wsaData;
-    WSAStartup(MAKEWORD(2, 2), &wsaData);
-    sock = socket(PF_INET, SOCK_DGRAM, 0);
-#endif
-#ifdef __linux__
-    sock = socket(AF_INET, SOCK_DGRAM, 0);
-#endif
-    memset(&serv_addr, 0, sizeof(serv_addr));
-    serv_addr.sin_family = PF_INET;
-    serv_addr.sin_addr.s_addr = inet_addr(ip_addr);
-    serv_addr.sin_port = htons(port);
-}
+
 Client::~Client()
 {
 
 }
+
 int Client::send_file(char* input_file_name)
 {
     input_file = fopen(input_file_name, "rb");
-    std::cout<<input_file<<std::endl;
     while (!feof(input_file))
     {
         read_file(input_file_name);
-        send_packet(MAX_PACKET_DATA_BYTE_LENGTH);
-        std::cout << file_slice << " !! ";    //���ݲ���
+        bool res = send_packet(MAX_PACKET_DATA_BYTE_LENGTH);
     }
     return 0;
 }
@@ -46,10 +30,10 @@ bool Client::read_file(char* input_file_name)
     if (isfirstread == true)
     {
         int len_of_text = filesize(input_file_name);
-        char start = 64;//����@
+        char start = 64;
         char start2 = 63;
         char* len_text = new char[MAX_PACKET_DATA_BYTE_LENGTH];
-        sprintf(len_text, "%s%c%d%c",input_file_name,start2, len_of_text, start);		//�����ļ���$����@����������
+        sprintf(len_text, "%s%c%d%c",input_file_name,start2, len_of_text, start);
         res = fread(file_slice, 1, MAX_PACKET_DATA_BYTE_LENGTH - strlen(len_text), input_file);
         res += strlen(len_text);
         int len_tmp = strlen(len_text);
@@ -57,7 +41,7 @@ bool Client::read_file(char* input_file_name)
         {
             len_text[ii] = file_slice[ii - len_tmp];
         }
-        file_slice = len_text;				//�����ļ�������@�����ӵ�����ǰ��
+        file_slice = len_text;
         isfirstread = false;
     }
     else
@@ -67,8 +51,20 @@ bool Client::read_file(char* input_file_name)
     return true;
 }
 
-bool Client::set_up_connection()
+bool Client::set_up_connection(const char* ip_addr, int port)
 {
+#ifdef _WIN32
+    WSADATA wsaData;
+    WSAStartup(MAKEWORD(2, 2), &wsaData);
+    sock = socket(AF_INET, SOCK_DGRAM, 0);
+#endif
+#ifdef __linux__
+    sock = socket(AF_INET, SOCK_DGRAM, 0);
+#endif
+    memset(&serv_addr, 0, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = inet_addr(ip_addr);
+    serv_addr.sin_port = htons(port);
     return true;
 }
 

@@ -20,7 +20,6 @@ private:
 public:
 	//constructor
 	Client();
-	Client(const char* ip_addr, int port);
 
 	//destructor
 	~Client();
@@ -36,7 +35,7 @@ public:
 
 	//set up ip connection to a server
 	//return status
-	bool set_up_connection();
+	bool set_up_connection(const char* ip_addr, int port);
 
 	//send packet on connection
 	//return status

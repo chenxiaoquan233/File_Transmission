@@ -1,33 +1,44 @@
 #include "../../include/Server/Server.h"
+
 Server::Server()
 {
 
 }
-Server::Server(const char* ip_addr, int port)
-{
-#ifdef _WIN32
-    WSADATA wsaData;
-    WSAStartup(MAKEWORD(2, 2), &wsaData);
-    //创建套接字
-    sock = socket(PF_INET, SOCK_DGRAM, 0);
-#endif
-#ifdef __linux__
-    sock = socket(AF_INET, SOCK_DGRAM, 0);
-#endif
-    //服务器地址信息
-    memset(&serv_addr, 0, sizeof(serv_addr));  //每个字节都用0填充
-    serv_addr.sin_family = PF_INET;
-    serv_addr.sin_addr.s_addr = inet_addr(ip_addr);
-    serv_addr.sin_port = htons(port);
-}
+
 Server::~Server()
 {
 
 }
 
-bool Server::set_listen()
+bool Server::set_listen(int port)
 {
-    int res = sendto(sock, file_slice, MAX_PACKET_DATA_BYTE_LENGTH, 0, (struct sockaddr*) & serv_addr, sizeof(serv_addr));
+    int res;
+#ifdef _WIN32
+    WSADATA wsaData;
+    WSAStartup(MAKEWORD(2, 2), &wsaData);
+    sock = socket(AF_INET, SOCK_DGRAM, 0);
+#endif
+#ifdef __linux__
+    sock = socket(AF_INET, SOCK_DGRAM, 0);
+#endif
+    memset(&serv_addr, 0, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    serv_addr.sin_port = htons(port);
+    int on = 1;
+    res = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
+    res = bind(sock, (struct sockaddr*)&serv_addr, sizeof(sockaddr));
+    return res!=-1;
+}
+
+bool Server::recv_packet()
+{
+    socklen_t nSize = sizeof(sockaddr);
+    file_slice = new char[MAX_PACKET_DATA_BYTE_LENGTH];
+    int res = recvfrom(sock, file_slice, MAX_PACKET_DATA_BYTE_LENGTH, 0, (struct sockaddr*)&serv_addr, &nSize);
+    printf("%d\n",res);
+    if(res == -1)
+        perror("socket"),perror("recvfrom");
     return res != -1;
 }
 
@@ -51,6 +62,7 @@ int Server::read_FILEinformation(FILE*& output_file, char* origin_data, int& dat
     output_file = fopen(FILE_path, "wb");
     return info_length + 1;
 }
+
 bool Server::write_file(FILE* output_file,char * data,int data_length)
 {
 	for (int data_i = 0; data_i < data_length; data_i++)

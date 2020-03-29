@@ -15,7 +15,7 @@ $(bin_path)Server-linux: $(serv_obj)
 	g++ -g -o $@ $(serv_obj) -lpthread
 
 $(bin_path)Client-linux: $(clit_obj)
-	g++ -g -o $@ $(serv_obj) -lpthread
+	g++ -g -o $@ $(clit_obj) -lpthread
 
 $(serv_obj_path)main.o: $(serv_src_path)main.cpp
 	g++ -g -c $^ -o $@
