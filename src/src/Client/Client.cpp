@@ -6,6 +6,7 @@ Client::Client()
 }
 Client::Client(const char* ip_addr, int port)
 {
+    printf("set Client\n");
 #ifdef _WIN32
     WSADATA wsaData;
     WSAStartup(MAKEWORD(2, 2), &wsaData);
@@ -23,28 +24,32 @@ Client::~Client()
 {
 
 }
-int Client::client(char* input_file_name)
+int Client::send_file(char* input_file_name)
 {
     input_file = fopen(input_file_name, "rb");
+    std::cout<<input_file<<std::endl;
     while (!feof(input_file))
     {
         read_file(input_file_name);
-        std::cout << file_slice << " !! ";    //ÄÚÈÝ²âÊÔ
+        send_packet(MAX_PACKET_DATA_BYTE_LENGTH);
+        std::cout << file_slice << " !! ";    //ï¿½ï¿½ï¿½Ý²ï¿½ï¿½ï¿½
     }
     return 0;
 }
 bool Client::read_file(char* input_file_name)
 {
+    if(file_slice)
+        delete(file_slice);
     file_slice = new char[MAX_PACKET_DATA_BYTE_LENGTH];
     memset(file_slice, 0, MAX_PACKET_DATA_BYTE_LENGTH);
     int res;
     if (isfirstread == true)
     {
         int len_of_text = filesize(input_file_name);
-        char start = 64;//·ûºÅ@
+        char start = 64;//ï¿½ï¿½ï¿½ï¿½@
         char start2 = 63;
         char* len_text = new char[MAX_PACKET_DATA_BYTE_LENGTH];
-        sprintf(len_text, "%s%c%d%c",input_file_name,start2, len_of_text, start);		//½«¡°ÎÄ¼þÃû$³¤¶È@¡±¼ÓÈëÊý×é
+        sprintf(len_text, "%s%c%d%c",input_file_name,start2, len_of_text, start);		//ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½$ï¿½ï¿½ï¿½ï¿½@ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         res = fread(file_slice, 1, MAX_PACKET_DATA_BYTE_LENGTH - strlen(len_text), input_file);
         res += strlen(len_text);
         int len_tmp = strlen(len_text);
@@ -52,7 +57,7 @@ bool Client::read_file(char* input_file_name)
         {
             len_text[ii] = file_slice[ii - len_tmp];
         }
-        file_slice = len_text;				//½«¡°ÎÄ¼þÃû³¤¶È@¡±Ìí¼Óµ½ÕýÎÄÇ°Ãæ
+        file_slice = len_text;				//ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½@ï¿½ï¿½ï¿½ï¿½ï¿½Óµï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½
         isfirstread = false;
     }
     else

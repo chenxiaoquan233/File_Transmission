@@ -26,7 +26,7 @@ public:
 	~Client();
 
 	//Incomplete parameters 
-	int client(char* input_file_name);
+	int send_file(char* input_file_name);
 
 	//read file slice from a specified file
 	//stored in file_slice
