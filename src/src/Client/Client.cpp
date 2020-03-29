@@ -77,7 +77,7 @@ int Client::filesize(char* input_file_name)
 {
     int length = 0;
     FILE* fp;
-    fopen_s(&fp, input_file_name, "rb");
+    fp = fopen(input_file_name, "rb");
     if (fp == NULL)
     {
         return -1;
