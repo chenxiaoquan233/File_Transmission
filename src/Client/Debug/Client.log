@@ -1,5 +1,0 @@
-﻿  Client.cpp
-  main.cpp
-  正在生成代码...
-C:\Users\77035\source\repos\File_Transmission\src\src\Client\Client.cpp(37,20): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
-  Client.vcxproj -> C:\Users\77035\source\repos\File_Transmission\src\\..\..\bin\Client-win.exe
