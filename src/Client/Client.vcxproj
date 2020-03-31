@@ -128,9 +128,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\include\base.h" />
+    <ClInclude Include="..\include\packet_load.h" />
     <ClInclude Include="..\include\Client\Client.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\packet_load.cpp" />
     <ClCompile Include="..\src\Client\Client.cpp" />
     <ClCompile Include="..\src\Client\main.cpp" />
   </ItemGroup>

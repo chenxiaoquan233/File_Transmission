@@ -21,7 +21,7 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <ProjectGuid>{F8BA1B91-9E37-4002-822A-4EA8F6B4C3F2}</ProjectGuid>
-    <RootNamespace>FileTransmission</RootNamespace>
+    <RootNamespace>Server</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
     <ProjectName>Server</ProjectName>
   </PropertyGroup>
@@ -129,9 +129,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\include\base.h" />
+    <ClInclude Include="..\include\packet_load.h" />
     <ClInclude Include="..\include\Server\Server.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\packet_load.cpp" />
     <ClCompile Include="..\src\Server\main.cpp" />
     <ClCompile Include="..\src\Server\Server.cpp" />
   </ItemGroup>

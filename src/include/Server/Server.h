@@ -1,9 +1,10 @@
 #include "../base.h"
+#include "../packet_load.h"
 
 class Server : public base
 {
 private:
-	char* file_slice;
+	packet_load* data;
 	sockaddr_in serv_addr;
 	FILE* output_file = nullptr;
 #ifdef _WIN32

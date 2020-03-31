@@ -1,11 +1,12 @@
 #pragma once
 
 #include "../base.h"
+#include "../packet_load.h"
 
 class Client : public base
 {
 private:
-	char* file_slice;
+	packet_load* data = nullptr;
 	FILE* input_file = nullptr;
 	bool isfirstread = true;
 	sockaddr_in serv_addr;
@@ -41,4 +42,6 @@ public:
 	//return status
 	bool send_packet(int len);
 	int filesize(char* input_file_name);
+
+	bool get_ack();
 };

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -18,5 +19,5 @@
 class base
 {
 	protected:
-		const int MAX_PACKET_DATA_BYTE_LENGTH = 1400;//to be modified
+		const int MAX_PACKET_DATA_BYTE_LENGTH = 548;//adviced length
 };

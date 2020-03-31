@@ -5,8 +5,8 @@ clit_obj_path = $(obj_path)Client/
 src_path = src/
 serv_src_path = $(src_path)Server/
 clit_src_path = $(src_path)Client/
-serv_obj = $(serv_obj_path)main.o $(serv_obj_path)Server.o
-clit_obj = $(clit_obj_path)main.o $(clit_obj_path)Client.o
+serv_obj = $(serv_obj_path)main.o $(serv_obj_path)Server.o $(obj_path)packet_load.o
+clit_obj = $(clit_obj_path)main.o $(clit_obj_path)Client.o $(obj_path)packet_load.o
 
 all: $(obj_path) $(serv_obj_path) $(clit_obj_path) $(bin_path)Server-linux $(bin_path)Client-linux
 	make clean
@@ -27,6 +27,9 @@ $(clit_obj_path)main.o: $(clit_src_path)main.cpp
 	g++ -g -c $^ -o $@
 
 $(clit_obj_path)Client.o: $(clit_src_path)Client.cpp
+	g++ -g -c $^ -o $@
+
+$(obj_path)packet_load.o: $(src_path)packet_load.cpp
 	g++ -g -c $^ -o $@
 
 $(obj_path):
