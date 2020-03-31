@@ -16,8 +16,16 @@ int Client::send_file(char* input_file_name)
     while (!feof(input_file))
     {
         read_file(input_file_name);
+        /*
+        for (int i = 0; i < MAX_PACKET_DATA_BYTE_LENGTH; i++)
+        {
+            printf("%c", data->get_file_slice()[i]);
+        }
+        printf("\n");
+        */
         get_ack();
         bool res = send_packet(MAX_PACKET_DATA_BYTE_LENGTH);
+        
     }
     return 0;
 }
@@ -34,14 +42,42 @@ bool Client::read_file(char* input_file_name)
     if (isfirstread == true)
     {
         int text_len = filesize(input_file_name);
-        int offset = strlen(input_file_name) + sizeof(char) + ceil(log10(text_len)) + 1;
-
-        sprintf(data->get_file_slice(), "%s?%d@", input_file_name, text_len);
+        temp_filesize = text_len;
+        data->set_slice_num(++count_packet);
+        int packet_serial_number = data->get_slice_num();
+        int offset = strlen(input_file_name) + 4 * sizeof(char) + ceil(log10(text_len))+ ceil(log10(packet_serial_number))+sizeof(char);
+        sprintf(data->get_file_slice(), "$%s?%d@%d&", input_file_name, text_len,packet_serial_number);
         res = fread(data->get_file_slice() + offset, 1, MAX_PACKET_DATA_BYTE_LENGTH - offset, input_file);
+        temp_filesize -= res;
+        if (temp_filesize == 0)
+        {
+            int read = res + offset;
+            if (read < MAX_PACKET_DATA_BYTE_LENGTH)
+            {
+                char s = 36;
+                data->get_file_slice()[read] = s;
+            }
+        }
         isfirstread = false;
     }
     else
-        res = fread(data->get_file_slice(), 1, MAX_PACKET_DATA_BYTE_LENGTH, input_file);
+    {
+        data->set_slice_num(++count_packet);
+        int packet_serial_number = data->get_slice_num();
+        int offset = strlen(input_file_name)+ sizeof(char)+ ceil(log10(packet_serial_number))+sizeof(char);
+        sprintf(data->get_file_slice(), "%s?%d&", input_file_name, packet_serial_number);
+        res = fread(data->get_file_slice() + offset, 1, MAX_PACKET_DATA_BYTE_LENGTH - offset, input_file);
+        temp_filesize -= res;
+        if (temp_filesize == 0)
+        {
+            int read = res + offset;
+            if (read < MAX_PACKET_DATA_BYTE_LENGTH)
+            {
+                char s = 36;
+                data->get_file_slice()[read] = s;
+            }
+        }
+    } 
     return res;
 }
 

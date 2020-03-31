@@ -9,6 +9,8 @@ private:
 	packet_load* data = nullptr;
 	FILE* input_file = nullptr;
 	bool isfirstread = true;
+	int count_packet = 0;
+	int temp_filesize;
 	sockaddr_in serv_addr;
 #ifdef _WIN32
 	SOCKET sock;
