@@ -18,11 +18,17 @@
     <ClInclude Include="..\include\base.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\packet_load.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
     <ClInclude Include="..\include\Server\Server.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+  <ClCompile Include="..\src\packet_load.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\Server\Server.cpp">
       <Filter>源文件</Filter>
     </ClCompile>

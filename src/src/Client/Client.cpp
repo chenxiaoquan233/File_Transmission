@@ -90,11 +90,22 @@ bool Client::get_ack()
     struct timeval timeout;
     timeout.tv_sec = 0;
     timeout.tv_usec = 200;
+#ifdef __linux__
     if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) == -1)
         return false;
+#endif
+#ifdef WIN32
+	if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout)) == -1)
+		return false;
+#endif
     
     char num_buffer[4];
+#ifdef __linux__
     socklen_t nSize = sizeof(sockaddr);
+#endif
+#ifdef WIN32
+	int nSize = sizeof(sockaddr);
+#endif
     recvfrom(sock, num_buffer, 4, 0, (struct sockaddr*)&serv_addr, &nSize);
 
     return atoi(num_buffer) == data->get_slice_num();
