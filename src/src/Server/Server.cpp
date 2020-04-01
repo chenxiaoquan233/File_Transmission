@@ -71,3 +71,44 @@ bool Server::write_file(FILE* output_file,char * data,int data_length)
 		fputc(data[data_i],output_file);
 	return true;
 }
+int Server::return_packet_serial_number()
+{
+	int position = 0, packet_serial_number = 0, position_first_file, position_first_file_flag = 0;
+	while (data->get_file_slice[position] != '?')
+	{
+		position++;
+	}
+	position_first_file = position;
+	while (data->get_file_slice[position_first_file] != '&')
+	{
+		if (data->get_file_slice[position_first_file] == '@')
+		{
+			position_first_file_flag = 1;
+			break;
+		}
+		position_first_file++;
+	}
+	if (position_first_file_flag == 1)
+	{
+		position_first_file++;
+		while (data->get_file_slice[position_first_file] != '&')
+		{
+			packet_serial_number *= 10;
+			packet_serial_number += (data->get_file_slice[position_first_file] - '0');
+			position_first_file++;
+		}
+		return packet_serial_number;
+
+	}
+	else
+	{
+		position++;
+		while (data->get_file_slice[position] != '&')
+		{
+			packet_serial_number *= 10;
+			packet_serial_number += (data->get_file_slice[position] - '0');
+			position++;
+		}
+		return packet_serial_number;
+	}
+}

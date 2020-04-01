@@ -34,4 +34,7 @@ public:
 	//write file slice to file
 	//return status
 	bool write_file(FILE* output_file,char * data,int data_length);
+
+	//return packet serial number
+	int return_packet_serial_number();
 };
