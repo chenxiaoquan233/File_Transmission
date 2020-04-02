@@ -39,7 +39,7 @@ public:
 	
 	//read data from file_slice and return the length of data
 	int get_file_data(char* src, char* dest, int maxlen);
-
+	
 	//read the information of file head(FILE path & FILE length)
 	//return length of infomation
 	int read_FILEinformation(FILE* &output_file, char* origin_data, int &data_length);

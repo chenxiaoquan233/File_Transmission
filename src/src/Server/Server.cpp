@@ -78,7 +78,7 @@ bool Server::recv_whole_file()
 	write_file(output_file, buffer, total_length);
 	return true;
 }
-int get_file_data(char* src, char* dest, int maxlen)
+int Server::get_file_data(char* src, char* dest, int maxlen)
 {
 	int srctot = 0,dsttot = 0;
 	while (src[srctot] != '@')++srctot;//find @
