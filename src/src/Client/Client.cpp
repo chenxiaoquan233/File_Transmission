@@ -41,6 +41,7 @@ bool Client::read_file(char* input_file_name)
     int res;
     if (isfirstread == true)
     {
+        /*first read*/
         int text_len = filesize(input_file_name);
         temp_filesize = text_len;
         data->set_slice_num(++count_packet);

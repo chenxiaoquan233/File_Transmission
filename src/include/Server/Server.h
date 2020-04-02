@@ -7,6 +7,8 @@ private:
 	packet_load* data;
 	sockaddr_in serv_addr;
 	FILE* output_file = nullptr;
+	//shore the received data for a short time
+	char* buffer;
 #ifdef _WIN32
     SOCKET sock;
 #endif
@@ -24,8 +26,19 @@ public:
 	//return status
 	bool set_listen(int port);
 
-	//start listen
+		
+    //start listen,reveive packet to file_slice
 	bool recv_packet();
+
+	
+	//receive a whole file(same path)
+	bool recv_whole_file();
+
+	//send current slice num to client
+	bool send_ack(int num);
+	
+	//read data from file_slice and return the length of data
+	int get_file_data(char* src, char* dest, int maxlen);
 
 	//read the information of file head(FILE path & FILE length)
 	//return length of infomation

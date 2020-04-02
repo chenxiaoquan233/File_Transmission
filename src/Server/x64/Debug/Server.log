@@ -1,0 +1,25 @@
+﻿  packet_load.cpp
+  main.cpp
+  Server.cpp
+C:\Users\Administrator\Documents\GitHub\File_Transmission\src\src\Server\Server.cpp(28,7): error C2664: “int setsockopt(SOCKET,int,int,const char *,int)”: 无法将参数 4 从“int *”转换为“const char *”
+C:\Users\Administrator\Documents\GitHub\File_Transmission\src\src\Server\Server.cpp(28,51): message : 与指向的类型无关；强制转换要求 reinterpret_cast、C 样式强制转换或函数样式强制转换
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\um\winsock.h(829,16): message : 参见“setsockopt”的声明
+C:\Users\Administrator\Documents\GitHub\File_Transmission\src\src\Server\Server.cpp(40,5): error C2065: “socklen_t”: 未声明的标识符
+C:\Users\Administrator\Documents\GitHub\File_Transmission\src\src\Server\Server.cpp(40,15): error C2146: 语法错误: 缺少“;”(在标识符“nSize”的前面)
+C:\Users\Administrator\Documents\GitHub\File_Transmission\src\src\Server\Server.cpp(40,15): error C2065: “nSize”: 未声明的标识符
+C:\Users\Administrator\Documents\GitHub\File_Transmission\src\src\Server\Server.cpp(42,110): error C2065: “nSize”: 未声明的标识符
+C:\Users\Administrator\Documents\GitHub\File_Transmission\src\src\Server\Server.cpp(77,38): error C3867: “packet_load::get_file_slice”: 非标准语法；请使用 "&" 来创建指向成员的指针
+C:\Users\Administrator\Documents\GitHub\File_Transmission\src\src\Server\Server.cpp(77,38): error C2109: 下标要求数组或指针类型
+C:\Users\Administrator\Documents\GitHub\File_Transmission\src\src\Server\Server.cpp(82,49): error C3867: “packet_load::get_file_slice”: 非标准语法；请使用 "&" 来创建指向成员的指针
+C:\Users\Administrator\Documents\GitHub\File_Transmission\src\src\Server\Server.cpp(82,49): error C2109: 下标要求数组或指针类型
+C:\Users\Administrator\Documents\GitHub\File_Transmission\src\src\Server\Server.cpp(84,6): error C3867: “packet_load::get_file_slice”: 非标准语法；请使用 "&" 来创建指向成员的指针
+C:\Users\Administrator\Documents\GitHub\File_Transmission\src\src\Server\Server.cpp(84,6): error C2109: 下标要求数组或指针类型
+C:\Users\Administrator\Documents\GitHub\File_Transmission\src\src\Server\Server.cpp(94,50): error C3867: “packet_load::get_file_slice”: 非标准语法；请使用 "&" 来创建指向成员的指针
+C:\Users\Administrator\Documents\GitHub\File_Transmission\src\src\Server\Server.cpp(94,50): error C2109: 下标要求数组或指针类型
+C:\Users\Administrator\Documents\GitHub\File_Transmission\src\src\Server\Server.cpp(97,69): error C3867: “packet_load::get_file_slice”: 非标准语法；请使用 "&" 来创建指向成员的指针
+C:\Users\Administrator\Documents\GitHub\File_Transmission\src\src\Server\Server.cpp(97,69): error C2109: 下标要求数组或指针类型
+C:\Users\Administrator\Documents\GitHub\File_Transmission\src\src\Server\Server.cpp(106,39): error C3867: “packet_load::get_file_slice”: 非标准语法；请使用 "&" 来创建指向成员的指针
+C:\Users\Administrator\Documents\GitHub\File_Transmission\src\src\Server\Server.cpp(106,39): error C2109: 下标要求数组或指针类型
+C:\Users\Administrator\Documents\GitHub\File_Transmission\src\src\Server\Server.cpp(109,58): error C3867: “packet_load::get_file_slice”: 非标准语法；请使用 "&" 来创建指向成员的指针
+C:\Users\Administrator\Documents\GitHub\File_Transmission\src\src\Server\Server.cpp(109,58): error C2109: 下标要求数组或指针类型
+  正在生成代码...

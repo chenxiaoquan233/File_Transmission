@@ -1,12 +1,17 @@
 #pragma once
-
+#ifdef _MSC_VER
+#define _CRT_SECURE_NO_WARNINGS
+#define _XKEYCHECK_H
+#endif
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <iostream>
+
 #ifdef _WIN32
 #include <winsock.h>
+
 #pragma comment (lib, "ws2_32.lib")
 #endif
 #ifdef __linux__

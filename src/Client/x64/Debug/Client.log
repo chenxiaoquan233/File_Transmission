@@ -1,0 +1,9 @@
+﻿  packet_load.cpp
+  Client.cpp
+C:\Users\Administrator\Documents\GitHub\File_Transmission\src\src\Client\Client.cpp(49,20): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
+C:\Users\Administrator\Documents\GitHub\File_Transmission\src\src\Client\Client.cpp(51,106): warning C4267: “=”: 从“size_t”转换到“int”，可能丢失数据
+C:\Users\Administrator\Documents\GitHub\File_Transmission\src\src\Client\Client.cpp(68,20): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
+C:\Users\Administrator\Documents\GitHub\File_Transmission\src\src\Client\Client.cpp(70,106): warning C4267: “=”: 从“size_t”转换到“int”，可能丢失数据
+  main.cpp
+  正在生成代码...
+  Client.vcxproj -> C:\Users\Administrator\Documents\GitHub\File_Transmission\src\x64\Debug\Client.exe
