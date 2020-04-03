@@ -104,7 +104,7 @@ bool Server::send_ack(int num)
 {
 	int packet_serial_number = num;//get packet serial number
 	char ack[4];
-	itoa(packet_serial_number, ack, 10);//transform packet_serial_number to char*
+	_itoa(packet_serial_number, ack, 10);//transform packet_serial_number to char*
 	int res = sendto(sock, ack, strlen(ack), 0, (struct sockaddr*) & serv_addr, sizeof(serv_addr));
 	return res != -1;
 
