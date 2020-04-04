@@ -6,6 +6,6 @@ int main()
     if(server->set_listen(8080))
         while(1)
         {
-            server->recv_packet();
+            server->recv_whole_file();
         }
 }

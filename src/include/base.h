@@ -24,5 +24,6 @@
 class base
 {
 	protected:
-		const int MAX_PACKET_DATA_BYTE_LENGTH = 548;//adviced length
+		const int MAX_PACKET_DATA_BYTE_LENGTH = 528;//adviced length
+		const int UPD_HEADER_LENGTH = 19;
 };

@@ -2,15 +2,13 @@
 
 #include "../base.h"
 #include "../packet_load.h"
+#include "../file.h"
 
 class Client : public base
 {
 private:
-	packet_load* data = nullptr;
-	FILE* input_file = nullptr;
-	bool isfirstread = true;
-	int count_packet = 0;
-	int temp_filesize;
+	File* file;
+	pkt_load* data = nullptr;
 	sockaddr_in serv_addr;
 #ifdef _WIN32
 	SOCKET sock;
@@ -43,7 +41,6 @@ public:
 	//send packet on connection
 	//return status
 	bool send_packet(int len);
-	int filesize(char* input_file_name);
 
 	bool get_ack();
 };

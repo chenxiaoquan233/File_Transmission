@@ -1,3 +1,0 @@
-﻿  Server.cpp
-C:\Users\Administrator\Documents\GitHub\File_Transmission\src\src\Server\Server.cpp(108,95): warning C4267: “参数”: 从“size_t”转换到“int”，可能丢失数据
-  Server.vcxproj -> C:\Users\Administrator\Documents\GitHub\File_Transmission\src\x64\Debug\Server.exe

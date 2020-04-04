@@ -18,6 +18,9 @@
     <ClInclude Include="..\include\base.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\file.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
     <ClInclude Include="..\include\packet_load.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -26,7 +29,10 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-  <ClCompile Include="..\src\packet_load.cpp">
+    <ClCompile Include="..\src\file.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\packet_load.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Server\Server.cpp">

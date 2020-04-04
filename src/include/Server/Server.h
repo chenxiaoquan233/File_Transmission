@@ -4,11 +4,10 @@
 class Server : public base
 {
 private:
-	packet_load* data;
+	pkt_load* data;
 	sockaddr_in serv_addr;
-	FILE* output_file = nullptr;
 	//shore the received data for a short time
-	char* buffer;
+	char* buffer = nullptr;
 #ifdef _WIN32
     SOCKET sock;
 #endif
@@ -46,8 +45,11 @@ public:
 
 	//write file slice to file
 	//return status
-	bool write_file(FILE* output_file,char * data,int data_length);
+	bool write_file(FILE* output_file,char* data,int data_length);
 
 	//return packet serial number
 	int return_packet_serial_number();
+
+	//get params
+	void parse_param(char*, char*, int*, char*, int, int*);
 };

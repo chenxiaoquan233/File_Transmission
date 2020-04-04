@@ -12,20 +12,16 @@ Client::~Client()
 
 int Client::send_file(char* input_file_name)
 {
-    input_file = fopen(input_file_name, "rb");
-    while (!feof(input_file))
+    file = new File(input_file_name, MAX_PACKET_DATA_BYTE_LENGTH, 0);
+    while (!file->eof())
     {
         read_file(input_file_name);
-        /*
-        for (int i = 0; i < MAX_PACKET_DATA_BYTE_LENGTH; i++)
-        {
-            printf("%c", data->get_file_slice()[i]);
-        }
-        printf("\n");
-        */
-        get_ack();
-        bool res = send_packet(MAX_PACKET_DATA_BYTE_LENGTH);
-        
+        int slice_len = data->get_slice_len();
+        bool res = send_packet(slice_len);
+        //while(!get_ack()) send_packet(slice_len());
+        printf("%d\n", data->get_slice_num());
+        file->pkt_send(data->get_slice_num() - 1);
+
     }
     return 0;
 }
@@ -33,52 +29,26 @@ int Client::send_file(char* input_file_name)
 bool Client::read_file(char* input_file_name)
 {
     if(data) delete data;//data equals nullptr the first time, but not after
-    data = new packet_load();
+    data = new pkt_load();
 
     if(!data->create_file_slice(MAX_PACKET_DATA_BYTE_LENGTH))
         return false;
 
     int res;
-    if (isfirstread == true)
-    {
-        /*first read*/
-        int text_len = filesize(input_file_name);
-        temp_filesize = text_len;
-        data->set_slice_num(++count_packet);
-        int packet_serial_number = data->get_slice_num();
-        int offset = strlen(input_file_name) + 4 * sizeof(char) + ceil(log10(text_len))+ ceil(log10(packet_serial_number))+sizeof(char);
-        sprintf(data->get_file_slice(), "$%s?%d@%d&", input_file_name, text_len,packet_serial_number);
-        res = fread(data->get_file_slice() + offset, 1, MAX_PACKET_DATA_BYTE_LENGTH - offset, input_file);
-        temp_filesize -= res;
-        if (temp_filesize == 0)
-        {
-            int read = res + offset;
-            if (read < MAX_PACKET_DATA_BYTE_LENGTH)
-            {
-                char s = 36;
-                data->get_file_slice()[read] = s;
-            }
-        }
-        isfirstread = false;
-    }
-    else
-    {
-        data->set_slice_num(++count_packet);
-        int packet_serial_number = data->get_slice_num();
-        int offset = strlen(input_file_name)+ sizeof(char)+ ceil(log10(packet_serial_number))+sizeof(char);
-        sprintf(data->get_file_slice(), "%s?%d&", input_file_name, packet_serial_number);
-        res = fread(data->get_file_slice() + offset, 1, MAX_PACKET_DATA_BYTE_LENGTH - offset, input_file);
-        temp_filesize -= res;
-        if (temp_filesize == 0)
-        {
-            int read = res + offset;
-            if (read < MAX_PACKET_DATA_BYTE_LENGTH)
-            {
-                char s = 36;
-                data->get_file_slice()[read] = s;
-            }
-        }
-    } 
+    int slice_num = file->get_pkt_num();
+    data->set_slice_num(slice_num);
+    
+    sprintf(data->get_file_slice(), "%s@%03d&", input_file_name,  slice_num);
+    
+    //continue from previous point
+    FILE* file_ptr = file->get_file();
+    int file_offset = file->get_base_offset() + (slice_num - 1) * file->get_slice_len();
+    printf("%d\n", file_offset);
+    fseek(file_ptr, file_offset, SEEK_SET);
+
+    int header_offset = file->get_offset();
+    res = fread(data->get_file_slice() + header_offset, 1, MAX_PACKET_DATA_BYTE_LENGTH - header_offset, file_ptr);
+    data->set_slice_len(res);
     return res;
 }
 
@@ -103,23 +73,8 @@ bool Client::set_up_connection(const char* ip_addr, int port)
 
 bool Client::send_packet(int len)
 {
-    int res=sendto(sock, data->get_file_slice(), len, 0, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
+    int res=sendto(sock, data->get_file_slice(), len + UPD_HEADER_LENGTH, 0, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
     return res!=-1;
-}
-
-int Client::filesize(char* input_file_name)
-{
-    int length = 0;
-    FILE* fp;
-    fp = fopen(input_file_name, "rb");
-    if (fp == NULL)
-    {
-        return -1;
-    }
-    fseek(fp, 0L, SEEK_END);
-    length = ftell(fp);
-    fclose(fp);
-    return length;
 }
 
 bool Client::get_ack()
@@ -135,7 +90,6 @@ bool Client::get_ack()
 	if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout)) == -1)
 		return false;
 #endif
-    
     char num_buffer[4];
 #ifdef __linux__
     socklen_t nSize = sizeof(sockaddr);
