@@ -65,7 +65,7 @@ bool Server::recv_whole_file()
 	{
 		int slice_num = 0;
 		char file_path[50];
-		char file_slice[MAX_PACKET_DATA_BYTE_LENGTH];
+		char* file_slice = new char[MAX_PACKET_DATA_BYTE_LENGTH];
 		int data_len = 0;
 
 		if (recv_packet())
@@ -80,6 +80,8 @@ bool Server::recv_whole_file()
 			fclose(output_file_slice);
 			//write_file(output_file_slice, file_slice, data_len);
 		}
+
+		delete file_slice;
 	}
 
 	/*while (1)
