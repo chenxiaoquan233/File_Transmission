@@ -52,4 +52,7 @@ public:
 
 	//get params
 	void parse_param(char*, char*, int*, char*, int, int*);
+
+	//Check that the folder path does not create a folder
+	int set_dir(char* path);
 };

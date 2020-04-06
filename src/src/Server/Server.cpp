@@ -241,3 +241,22 @@ void Server::parse_param(char* src, char* path, int* slice_num, char* data, int 
 	for(di = 0; di < *data_len; ++di)
 		data[di] = src[si + di];
 }
+int Server::set_dir(char* path)
+{
+	int len = strlen(path);
+	char* tmpDirPath = new char[100];
+	memset(tmpDirPath, 0, 100);
+	for (int i = 0; i < len; i++)
+	{
+		tmpDirPath[i] = path[i];
+		if (tmpDirPath[i] == '\\' || tmpDirPath[i] == '/')
+		{
+			if (_access(tmpDirPath, 0) == -1)
+			{
+				int ret = _mkdir(tmpDirPath);
+				if (ret == -1) return ret;//Create failure
+			}
+		}
+	}
+	return 0;//Create success
+}

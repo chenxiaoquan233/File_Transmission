@@ -8,6 +8,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <iostream>
+#include <io.h>
+#include <direct.h>
 
 #ifdef _WIN32
 #include <winsock.h>
