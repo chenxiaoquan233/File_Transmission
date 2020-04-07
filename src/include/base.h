@@ -8,6 +8,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <iostream>
+#include<afx.h>
+#include <afxpriv.h>
 #include <io.h>
 #include <direct.h>
 
@@ -28,4 +30,5 @@ class base
 	protected:
 		const int MAX_PACKET_DATA_BYTE_LENGTH = 528;//adviced length
 		const int UPD_HEADER_LENGTH = 19;
+		const int SEND_FREQ = 10;
 };

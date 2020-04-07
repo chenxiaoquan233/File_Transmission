@@ -43,4 +43,6 @@ public:
 	bool send_packet(int len);
 
 	bool get_ack();
+
+	int read_path(char* path, char* buffer[]);
 };
