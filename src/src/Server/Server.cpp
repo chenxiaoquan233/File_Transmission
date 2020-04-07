@@ -29,12 +29,46 @@ bool Server::set_listen(int port)
     if(setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) == -1)
 #endif
 #ifdef WIN32
-	if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&on, sizeof(on)) == -1)
+		if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&on, sizeof(on)) == -1)
 #endif
-        return false;
+		{
+			return false;
+		}
     if(bind(sock, (struct sockaddr*)&serv_addr, sizeof(sockaddr)) == -1)
-        return false;
+	{
+		return false;
+	}
     return true;
+}
+
+int Server::check_port(int cmd_port) {
+	static int start_port = cmd_port > 1024 ? cmd_port + 1 : 1024;
+#ifdef _WIN32
+	data_sock = socket(AF_INET, SOCK_DGRAM, 0);
+#endif
+#ifdef __linux__
+	sock = socket(AF_INET, SOCK_DGRAM, 0);
+#endif
+	memset(&serv_addr2, 0, sizeof(serv_addr2));
+	serv_addr2.sin_family = AF_INET;
+	serv_addr2.sin_addr.s_addr = htonl(INADDR_ANY);
+	serv_addr2.sin_port = htons(start_port);
+	bind(data_sock, (LPSOCKADDR)&serv_addr2, sizeof(serv_addr2));
+	while (WSAGetLastError() == WSAEADDRINUSE)
+	{
+		//端口已被占用
+		//printf("占用");
+		start_port++;
+		memset(&serv_addr2, 0, sizeof(serv_addr2));
+		serv_addr2.sin_family = AF_INET;
+		serv_addr2.sin_addr.s_addr = htonl(INADDR_ANY);
+		serv_addr2.sin_port = htons(start_port);
+		bind(data_sock, (LPSOCKADDR)&serv_addr2, sizeof(serv_addr2));
+	}
+	char answer_port[10];
+	sprintf(answer_port, "PORT %d", start_port);
+	sendto(sock, answer_port, strlen(answer_port), 0, (struct sockaddr*) & serv_addr, sizeof(serv_addr));
+	return start_port;
 }
 
 bool Server::recv_packet()

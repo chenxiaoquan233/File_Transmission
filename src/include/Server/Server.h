@@ -6,13 +6,16 @@ class Server : public base
 private:
 	pkt_load* data;
 	sockaddr_in serv_addr;
+	sockaddr_in serv_addr2;
 	//shore the received data for a short time
 	char* buffer = nullptr;
 #ifdef _WIN32
     SOCKET sock;
+	SOCKET data_sock;
 #endif
 #ifdef __linux__
 	int sock;
+	int data_sock;
 #endif
 public:
 	//constructor
@@ -55,4 +58,8 @@ public:
 
 	//Check that the folder path does not create a folder
 	int set_dir(char* path);
+
+	//find a usable  port
+	//return port number
+	int check_port(int cmd_port);
 };
