@@ -11,10 +11,10 @@ private:
 	pkt_load* data = nullptr;
 	sockaddr_in serv_addr;
 #ifdef _WIN32
-	SOCKET sock;
+	SOCKET cmd_sock;
 #endif
 #ifdef __linux__
-	int sock;
+	int cmd_sock;
 #endif
 
 	
