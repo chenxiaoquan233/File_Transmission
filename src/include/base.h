@@ -17,13 +17,16 @@
 
 #ifdef _WIN32
 #include <winsock.h>
-
+#include <io.h>
+#include <direct.h>
 #pragma comment (lib, "ws2_32.lib")
 #endif
 #ifdef __linux__
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #endif
 
 //set common prefixes here

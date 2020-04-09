@@ -293,6 +293,7 @@ int Server::set_dir(char* path)
 	int len = strlen(path);
 	char* tmpDirPath = new char[100];
 	memset(tmpDirPath, 0, 100);
+#ifdef _WIN32
 	for (int i = 0; i < len; i++)
 	{
 		tmpDirPath[i] = path[i];
@@ -305,5 +306,20 @@ int Server::set_dir(char* path)
 			}
 		}
 	}
+#endif
+#ifdef __linux__
+	for (int i = 0; i < len; i++)
+	{
+		tmpDirPath[i] = path[i];
+		if (tmpDirPath[i] == '\\' || tmpDirPath[i] == '/')
+		{
+			if (access(tmpDirPath, 0) == -1)
+			{
+				int ret = mkdir(tmpDirPath, 0777);
+				if (ret == -1) return ret;//Create failure
+			}
+		}
+	}
+#endif
 	return 0;//Create success
 }
