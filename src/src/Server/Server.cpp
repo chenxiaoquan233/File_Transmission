@@ -39,6 +39,7 @@ bool Server::set_listen(int port)
 		return false;
 	}
     return true;
+	//printf("%d\n",check_port(8079));
 }
 
 int Server::check_port(int cmd_port) {
@@ -53,6 +54,7 @@ int Server::check_port(int cmd_port) {
 	serv_addr2.sin_family = AF_INET;
 	serv_addr2.sin_addr.s_addr = htonl(INADDR_ANY);
 	serv_addr2.sin_port = htons(start_port);
+#ifdef _WIN32
 	bind(data_sock, (LPSOCKADDR)&serv_addr2, sizeof(serv_addr2));
 	while (WSAGetLastError() == WSAEADDRINUSE)
 	{
@@ -65,6 +67,17 @@ int Server::check_port(int cmd_port) {
 		serv_addr2.sin_port = htons(start_port);
 		bind(data_sock, (LPSOCKADDR)&serv_addr2, sizeof(serv_addr2));
 	}
+#endif
+#ifdef __linux__
+	while (bind(sock, (struct sockaddr*) & serv_addr2, sizeof(sockaddr)) == -1)
+	{
+		start_port++;
+		memset(&serv_addr2, 0, sizeof(serv_addr2));
+		serv_addr2.sin_family = AF_INET;
+		serv_addr2.sin_addr.s_addr = htonl(INADDR_ANY);
+		serv_addr2.sin_port = htons(start_port);
+	}
+#endif
 	char answer_port[10];
 	sprintf(answer_port, "PORT %d", start_port);
 	sendto(sock, answer_port, strlen(answer_port), 0, (struct sockaddr*) & serv_addr, sizeof(serv_addr));
