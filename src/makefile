@@ -1,15 +1,47 @@
+# build path
 bin_path = ../bin/
-obj_path = $(bin_path)obj/
-serv_obj_path = $(obj_path)Server/
-clit_obj_path = $(obj_path)Client/
+
+# source path
 src_path = src/
 serv_src_path = $(src_path)Server/
 clit_src_path = $(src_path)Client/
-serv_obj = $(serv_obj_path)main.o $(serv_obj_path)Server.o $(obj_path)packet_load.o
-clit_obj = $(clit_obj_path)main.o $(clit_obj_path)Client.o $(obj_path)packet_load.o $(obj_path)file.o
+zlib_src_path = $(src_path)zlib/
 
-all: $(obj_path) $(serv_obj_path) $(clit_obj_path) $(bin_path)Server-linux $(bin_path)Client-linux
+# obj path
+obj_path = $(bin_path)obj/
+serv_obj_path = $(obj_path)Server/
+clit_obj_path = $(obj_path)Client/
+zlib_obj_path = $(obj_path)zlib/
+
+#source files
+base_src = $(shell find $(src_path) -maxdepth 1 -name '*.cpp')
+zlib_src = $(shell find $(zlib_src_path) -maxdepth 1 -name '*.cpp')
+serv_src = $(shell find $(serv_src_path) -maxdepth 1 -name '*.cpp')
+clit_src = $(shell find $(clit_src_path) -maxdepth 1 -name '*.cpp')
+
+#objs
+base_obj = $(addprefix $(obj_path)/,$(notdir $(base_src:%.cpp=%.o)))
+zlib_obj = $(addprefix $(zlib_obj_path)/,$(notdir $(zlib_src:%.cpp=%.o)))
+
+serv_obj = $(addprefix $(serv_obj_path)/,$(notdir $(serv_src:%.cpp=%.o)))
+clit_obj = $(addprefix $(clit_obj_path)/,$(notdir $(clit_src:%.cpp=%.o)))
+serv_obj += $(base_obj)
+serv_obj += $(zlib_obj)
+clit_obj += $(base_obj)
+clit_obj += $(zlib_obj)
+
+# targets
+.PHONY: all clean
+
+all:
+	make Server
+	make Clinet
 	make clean
+
+
+Server: $(bin_path)Server-linux
+
+Client: $(bin_path)Client-linux
 
 $(bin_path)Server-linux: $(serv_obj)
 	g++ -g -o $@ $(serv_obj) -lpthread
@@ -17,30 +49,26 @@ $(bin_path)Server-linux: $(serv_obj)
 $(bin_path)Client-linux: $(clit_obj)
 	g++ -g -o $@ $(clit_obj) -lpthread
 
-$(serv_obj_path)main.o: $(serv_src_path)main.cpp
-	g++ -g -c $^ -o $@
+# objs
+$(obj_path)%.o: $(src_path)%.cpp $(obj_path)
+	g++ -g -c $< -o $@
 
-$(serv_obj_path)Server.o: $(serv_src_path)Server.cpp
-	g++ -g -c $^ -o $@
+$(zlib_obj_path)%.o: $(zlib_src_path)%.cpp $(zlib_obj_path)
+	g++ -g -c $< -o $@
 
-$(clit_obj_path)main.o: $(clit_src_path)main.cpp
-	g++ -g -c $^ -o $@
+$(serv_obj_path)%.o: $(serv_src_path)%.cpp $(serv_obj_path)
+	g++ -g -c $< -o $@
 
-$(clit_obj_path)Client.o: $(clit_src_path)Client.cpp
-	g++ -g -c $^ -o $@
+$(clit_obj_path)%.o: $(clit_src_path)%.cpp $(clit_obj_path)
+	g++ -g -c $< -o $@
 
-$(obj_path)packet_load.o: $(src_path)packet_load.cpp
-	g++ -g -c $^ -o $@
-
-$(obj_path)file.o: $(src_path)file.cpp
-	g++ -g -c $^ -o $@
 $(obj_path):
 	mkdir $@
 
-$(serv_obj_path):
+$(serv_obj_path): $(obj_path)
 	mkdir $@
 
-$(clit_obj_path):
+$(clit_obj_path): $(obj_path)
 	mkdir $@
 
 clean:

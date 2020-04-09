@@ -8,10 +8,12 @@
 #include <string.h>
 #include <stdlib.h>
 #include <iostream>
-#include<afx.h>
+#ifdef WIN32
+#include <afx.h>
 #include <afxpriv.h>
 #include <io.h>
 #include <direct.h>
+#endif
 
 #ifdef _WIN32
 #include <winsock.h>
