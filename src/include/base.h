@@ -9,8 +9,6 @@
 #include <stdlib.h>
 #include <iostream>
 #ifdef WIN32
-#include <afx.h>
-#include <afxpriv.h>
 #include <io.h>
 #include <direct.h>
 #endif

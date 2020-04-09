@@ -44,5 +44,5 @@ public:
 
 	bool get_ack();
 
-	int read_path(char* path, char* buffer[]);
+	int read_path(const char* path, char* buffer[]);
 };

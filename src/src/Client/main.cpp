@@ -13,7 +13,7 @@ int main(int argc, char** argv)
     }
     int folder_number=client->read_path(argv[2], test);
     /*
-    for (int i=0; i < folder_number; i++)
+    for (int i=0; i <= folder_number; i++)
     {
         std::cout << test[i];
     }

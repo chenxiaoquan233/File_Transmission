@@ -102,57 +102,47 @@ bool Client::get_ack()
     return atoi(num_buffer) == data->get_slice_num();
 }
 
-int Client::read_path(char* path, char* buffer[])
+int Client::read_path(const char* path, char* buffer[])
 {
-    CString filenamelist;
     static int foldernumber = 0;
-    CString cpath = path;
-    char* temp = new char[1000];
-    char* temp1 = new char[1000];
-    char* temp2 = new char[1000];
-    char* temp3 = new char[1000];
-    memset(temp, 0, 1000);
-    memset(temp1, 0, 1000);
-    memset(temp2, 0, 1000);
-    memset(temp3, 0, 1000);
-    char* s1 = "d ";
-    char* s2 = "\n";
-    CFileFind finder;
-    BOOL working = finder.FindFile(cpath + "\\*.*");
-    while (working)
+    intptr_t handle;
+    _finddata_t findData;
+    char* dir = new char[1000];
+    strcpy(dir, path);
+    dir = strcat(dir, "/*.*");
+    handle = _findfirst(dir, &findData);
+    if (handle == -1)
     {
-        working = finder.FindNextFile();
-        if (finder.IsDots())
-            continue;
-        if (finder.IsDirectory())
-        {
-            USES_CONVERSION;
-            temp = T2A(finder.GetFilePath());
-            int i = 0;
-            int j = 0;
-            int k = 0;
-            for (i = strlen(temp)-1; i > 0; i--)
-            {
-                if (temp[i] == '\\')
-                    break;
-            }
-            for (j = i; j < strlen(temp); j++)
-            {
-                temp2[k++] = temp[j];           //temp2形如“\s1”，即找出当前找到的子文件夹
-            }
-            temp1 = strcat(path, temp2);        //将原相对路径与之连接
-            sprintf(temp3, "%s%s%s", s1, temp1, s2);        //标准化格式为“d floderpath\n”
-            strcpy(buffer[foldernumber++], temp3);
-            read_path(temp1, buffer);
-        }
-        else
-        {
-            CString filename = (finder.GetFileName());
-            filenamelist = "d "+cpath+"\\"+filename+"\n";
-            USES_CONVERSION;
-            temp = T2A(filenamelist);
-            //strcpy(buffer[foldernumber++], temp);     //去掉此条语句的注释可将文件路径加入数组
-        }
+        return 0;
     }
+    do
+    {
+        if (findData.attrib & _A_SUBDIR && strcmp(findData.name, ".") != 0 && strcmp(findData.name, "..") != 0)
+        {
+            //for floder
+            foldernumber++;
+            std::string subdir(path);
+            subdir += ("/" + std::string(findData.name));
+            std::string standardization(subdir);
+            standardization.insert(0, "d ");
+            standardization += "\n";
+            strcpy(buffer[foldernumber], standardization.c_str());
+            read_path(subdir.c_str(), buffer);
+        }
+        else if (strcmp(findData.name, ".") != 0 && strcmp(findData.name, "..") != 0)
+        {
+            //for file,remove the comment here to add the file path to the array
+            /*
+            foldernumber++;
+            std::string filepath(path);
+            filepath+= ("/" + std::string(findData.name));
+            std::string standardization(filepath);
+            standardization.insert(0, "d ");
+            standardization += "\n";
+            strcpy(buffer[foldernumber], standardization.c_str());
+            */
+        }
+    } while (_findnext(handle, &findData) == 0);
+    _findclose(handle);
     return foldernumber;
 }
