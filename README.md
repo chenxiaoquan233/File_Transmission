@@ -54,7 +54,8 @@ parse_arg(int argc, char** argv)
 #### 4.
 添加一个读取文件路径的函数
 ```
-void read_path(char* path, char* buffer)
+void read_path(char* path, char* buffer)---->完成 int read_path(char* path,char *buffer[]) 
+变更：传入变为二维数组，返回值为读取到的文件夹路径数目
 ```
 递归读取path路径下的信息  
 每一个文件夹按照(双引号内格式)进行存储:
