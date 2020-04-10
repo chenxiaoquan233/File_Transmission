@@ -79,7 +79,7 @@ INFO
 超过次数后告诉用户失败  
 #### 6.
 添加一个常量 SEND_FREQ 表示最大重传次数
-#### 7.
+#### 7.完成
 添加压缩函数(或调用库)
 ```
 int zip(char* src, char* dest, int src_len)
@@ -111,28 +111,28 @@ PORT 端口号
 ```
 建立临时数据sock，向对应端口发送数据
 ### Server:
-#### 1.
+#### 1.完成
 添加参数检查函数
 ```
 parse_arg(int argc, char** argv)
 ```
 检查参数是否合法  
 再检查路径是否存在并具有读写权限
-#### 2.
+#### 2.完成
 添加解析命令函数
 ```
 INFO 调用parse_path
 SEND 调用check_file
 PORT 调用check_port
 ```
-#### 3.
+#### 3.完成
 添加parse_path函数
 ```
 parse_path(char* path)
 ```
 从数据sock读入路径信息，回传INFO，解析后放入path中
 之后调用set_dir函数
-#### 4.
+#### 4.完成
 添加set_dir函数
 ```
 set_dir(char* path)
@@ -151,7 +151,7 @@ if 文件存在
 其他情况皆从头开始传输
 ```
 回传偏移量 断点续传则是文件长度，重传则为0
-#### 6.
+#### 6.完成
 添加检查端口函数
 开始端口为
 ```
@@ -164,7 +164,7 @@ start_port = cmd_port > 1024 ? cmd_port + 1 : 1024
 ```
 PORT 端口号
 ```
-#### 7.
+#### 7.完成
 添加解压函数
 ```
 int unzip(char* src, char* dest, int src_len)
