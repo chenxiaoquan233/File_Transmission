@@ -1,4 +1,3 @@
-#pragma once
 #include"../include/zip.h"
 int zip(char* src, char* &dest, int src_len)
 {

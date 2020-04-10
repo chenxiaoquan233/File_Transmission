@@ -15,16 +15,16 @@ zlib_obj_path = $(obj_path)zlib/
 
 #source files
 base_src = $(shell find $(src_path) -maxdepth 1 -name '*.cpp')
-zlib_src = $(shell find $(zlib_src_path) -maxdepth 1 -name '*.cpp')
+zlib_src = $(shell find $(zlib_src_path) -maxdepth 1 -name '*.c')
 serv_src = $(shell find $(serv_src_path) -maxdepth 1 -name '*.cpp')
 clit_src = $(shell find $(clit_src_path) -maxdepth 1 -name '*.cpp')
 
 #objs
-base_obj = $(addprefix $(obj_path)/,$(notdir $(base_src:%.cpp=%.o)))
-zlib_obj = $(addprefix $(zlib_obj_path)/,$(notdir $(zlib_src:%.cpp=%.o)))
+base_obj = $(addprefix $(obj_path),$(notdir $(base_src:%.cpp=%.o)))
+zlib_obj = $(addprefix $(zlib_obj_path),$(notdir $(zlib_src:%.c=%.o)))
 
-serv_obj = $(addprefix $(serv_obj_path)/,$(notdir $(serv_src:%.cpp=%.o)))
-clit_obj = $(addprefix $(clit_obj_path)/,$(notdir $(clit_src:%.cpp=%.o)))
+serv_obj = $(addprefix $(serv_obj_path),$(notdir $(serv_src:%.cpp=%.o)))
+clit_obj = $(addprefix $(clit_obj_path),$(notdir $(clit_src:%.cpp=%.o)))
 serv_obj += $(base_obj)
 serv_obj += $(zlib_obj)
 clit_obj += $(base_obj)
@@ -34,6 +34,7 @@ clit_obj += $(zlib_obj)
 .PHONY: all clean
 
 all:
+	make clean
 	make Server
 	make Clinet
 	make clean
@@ -53,8 +54,8 @@ $(bin_path)Client-linux: $(clit_obj)
 $(obj_path)%.o: $(src_path)%.cpp $(obj_path)
 	g++ -g -c $< -o $@
 
-$(zlib_obj_path)%.o: $(zlib_src_path)%.cpp $(zlib_obj_path)
-	g++ -g -c $< -o $@
+$(zlib_obj_path)%.o: $(zlib_src_path)%.c $(zlib_obj_path)
+	gcc -g -c $< -o $@
 
 $(serv_obj_path)%.o: $(serv_src_path)%.cpp $(serv_obj_path)
 	g++ -g -c $< -o $@
@@ -69,6 +70,9 @@ $(serv_obj_path): $(obj_path)
 	mkdir $@
 
 $(clit_obj_path): $(obj_path)
+	mkdir $@
+
+$(zlib_obj_path): $(obj_path)
 	mkdir $@
 
 clean:
