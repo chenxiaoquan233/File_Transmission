@@ -1,5 +1,10 @@
 #pragma once
+#ifdef _WIN32
 #include"zlib/zlib.h"
+#endif
+#ifdef __linux__
+#include <zlib.h>
+#endif
 #include<cstdio>
 #include<cstdlib>
 //return length of dst string
