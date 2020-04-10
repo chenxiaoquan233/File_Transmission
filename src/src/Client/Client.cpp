@@ -105,6 +105,7 @@ bool Client::get_ack()
 int Client::read_path(const char* path, char* buffer[])
 {
     static int foldernumber = 0;
+#ifdef WIN32
     intptr_t handle;
     _finddata_t findData;
     char* dir = new char[1000];
@@ -144,5 +145,42 @@ int Client::read_path(const char* path, char* buffer[])
         }
     } while (_findnext(handle, &findData) == 0);
     _findclose(handle);
+#endif
+#ifdef __linux__
+    struct dirent* ent = NULL;
+    DIR* pDir;
+    pDir = opendir(path);
+    while (NULL != (ent = readdir(pDir)))
+    {
+        if (ent->d_reclen == 24)
+        {
+            if (ent->d_type == 8)
+            {
+                //for file,remove the comment here to add the file path to the array
+                /*
+                foldernumber++;
+                std::string filepath(path);
+                filepath += ("/" + std::string(ent->d_name));
+                std::string standardization(filepath);
+                standardization.insert(0, "d ");
+                standardization += "\n";
+                strcpy(buffer[foldernumber], standardization.c_str());
+                */
+            }
+            else
+            {
+                //for floder
+                foldernumber++;
+                std::string subdir(path);
+                subdir += ("/" + std::string(ent->d_name));
+                std::string standardization(subdir);
+                standardization.insert(0, "d ");
+                standardization += "\n";
+                strcpy(buffer[foldernumber], standardization.c_str());
+                read_path(subdir.c_str(), buffer);
+            }
+        }
+    }
+#endif
     return foldernumber;
 }
