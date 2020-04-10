@@ -68,4 +68,7 @@ public:
 
 	//analytical command
 	void parse_cmd();
+
+	//parameter checking
+	bool parse_arg(int argc, char** argv);
 };

@@ -383,3 +383,26 @@ void Server::parse_cmd()
 		printf("Function parse_cmd() cmd error");
 	}
 }
+bool Server::parse_arg(int argc, char** argv)
+{
+	if (argc != 4)
+	{
+		printf("wrong number of parameters\n");
+		return false;
+	}
+	if ((access(argv[1], 0)) != -1)
+	{
+		if ((access(argv[1], 6)) == -1)
+		{
+			printf("File does not have read-write permission\n");
+			return false;
+		}
+		return true;
+	}
+	else
+	{
+		printf("File does not exist\n");
+		return false;
+	}
+	return false;
+}
