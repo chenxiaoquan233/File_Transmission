@@ -12,9 +12,11 @@ private:
 	sockaddr_in serv_addr;
 #ifdef _WIN32
 	SOCKET cmd_sock;
+	SOCKET* data_sock;
 #endif
 #ifdef __linux__
 	int cmd_sock;
+	int* data_sock;
 #endif
 
 	
