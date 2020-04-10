@@ -62,4 +62,7 @@ public:
 	//find a usable  port
 	//return port number
 	int check_port(int cmd_port);
+
+	//read in path information and return info and use function set_dir(char* path)
+	bool parse_path();
 };

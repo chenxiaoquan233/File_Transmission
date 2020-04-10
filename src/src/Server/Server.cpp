@@ -323,3 +323,21 @@ int Server::set_dir(char* path)
 #endif
 	return 0;//Create success
 }
+bool Server::parse_path()
+{
+	char* address = new char[256];
+	char* r_cmd = new char[4];
+	memset(r_cmd, 0, 4);
+	memset(address, 0, 256);
+#ifdef __linux__
+	socklen_t nSize = sizeof(sockaddr);
+#endif
+#ifdef WIN32
+	int nSize = sizeof(sockaddr);
+#endif
+	int res = recvfrom(sock, address, sizeof(address), 0, (struct sockaddr*) & serv_addr, &nSize);
+	sprintf(r_cmd, "%s", "INFO");
+	res = sendto(sock, r_cmd, 4, 0, (struct sockaddr*) & serv_addr, sizeof(serv_addr));
+	set_dir(address);
+	return res != -1;
+}
