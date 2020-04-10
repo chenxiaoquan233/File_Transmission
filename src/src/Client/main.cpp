@@ -79,12 +79,11 @@ int main(int argc, char** argv)
 {
     int port;
     char* file_path = nullptr;
-    char* ip_addr;
+    char* ip_addr = nullptr;
     bool dir_flag;
     if(argc > 1)
     {
         dir_flag = parse_arg(argc, argv, &file_path, &ip_addr, &port);
-        printf("%d, %s, %s, %d\n", dir_flag, file_path, ip_addr, port);
         Client* client = new Client();
         client->set_up_connection(ip_addr, port);
         if(dir_flag)
