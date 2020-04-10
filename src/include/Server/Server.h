@@ -65,4 +65,7 @@ public:
 
 	//read in path information and return info and use function set_dir(char* path)
 	bool parse_path();
+
+	//analytical command
+	void parse_cmd();
 };

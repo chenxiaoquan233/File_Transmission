@@ -341,3 +341,45 @@ bool Server::parse_path()
 	set_dir(address);
 	return res != -1;
 }
+void Server::parse_cmd()
+{
+	char* cmd = new char[256];
+	memset(cmd, 0, 256);
+#ifdef __linux__
+	socklen_t nSize = sizeof(sockaddr);
+#endif
+#ifdef WIN32
+	int nSize = sizeof(sockaddr);
+#endif
+	int res = recvfrom(sock, cmd, sizeof(cmd), 0, (struct sockaddr*) & serv_addr, &nSize);
+	if (cmd[0] == 'I' && cmd[1] == 'N' && cmd[2] == 'F' && cmd[3] == 'O')
+	{
+		parse_path();
+	}
+	else if (cmd[0] == 'S' && cmd[1] == 'E' && cmd[2] == 'N' && cmd[3] == 'D')
+	{
+		char* file_name = new char[100];
+		int i = 5;
+		memset(file_name, 0, 100);
+		while (cmd[i] != ' ' && i != strlen(cmd))
+		{
+			file_name[i - 5] = cmd[i];
+			i++;
+		}
+		check_file(file_name);
+	}
+	else if (cmd[0] == 'P' && cmd[1] == 'O' && cmd[2] == 'R' && cmd[3] == 'T' && cmd[4] == ' ')
+	{
+		int port = 0;
+		for (int i = 5; i < strlen(cmd); i++)
+		{
+			port *= 10;
+			port += (cmd[i] - '0');
+		}
+		check_port(port);
+	}
+	else
+	{
+		printf("Function parse_cmd() cmd error");
+	}
+}
