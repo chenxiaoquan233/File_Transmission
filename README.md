@@ -111,28 +111,28 @@ PORT 端口号
 ```
 建立临时数据sock，向对应端口发送数据
 ### Server:
-#### 1.
+#### 1.完成
 添加参数检查函数
 ```
 parse_arg(int argc, char** argv)
 ```
 检查参数是否合法  
 再检查路径是否存在并具有读写权限
-#### 2.
+#### 2.完成
 添加解析命令函数
 ```
 INFO 调用parse_path
 SEND 调用check_file
 PORT 调用check_port
 ```
-#### 3.
+#### 3.完成
 添加parse_path函数
 ```
 parse_path(char* path)
 ```
 从数据sock读入路径信息，回传INFO，解析后放入path中
 之后调用set_dir函数
-#### 4.
+#### 4.完成
 添加set_dir函数
 ```
 set_dir(char* path)
