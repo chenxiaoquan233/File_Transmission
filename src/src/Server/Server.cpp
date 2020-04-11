@@ -360,18 +360,17 @@ bool Server::parse_cmd()
 	else if (cmd[0] == 'S' && cmd[1] == 'E' && cmd[2] == 'N' && cmd[3] == 'D')
 	{
 		char* file_name = new char[100];
-		int i = 5,file_length=0;
+		int i = 5;
 		memset(file_name, 0, 100);
 		while (cmd[i] != ' ' && i != strlen(cmd))
 		{
 			file_name[i - 5] = cmd[i];
 			i++;
 		}
-<<<<<<< HEAD
-		if (!check_file(file_name,file_length)) {
-			write_logfile(file_name,total_packet_num);
+		if (!check_file(file_name, file_length)) {
+			write_logfile(file_name, total_packet_num);
 			write_logfile(file_name, file_length);
-=======
+		}
 		i++;
 		while (cmd[i] != ' ' && i != strlen(cmd))
 		{
@@ -391,7 +390,6 @@ bool Server::parse_cmd()
 		else
 		{
 			return false;
->>>>>>> 801e2e0145969e7a210f9ec46955f85e1eae8c9c
 		}
 	}
 	else if (cmd[0] == 'P' && cmd[1] == 'O' && cmd[2] == 'R' && cmd[3] == 'T' && cmd[4] == ' ')
