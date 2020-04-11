@@ -374,7 +374,7 @@ bool Server::parse_cmd()
 		if (i != strlen(cmd))
 		{
 			i++;
-			while (cmd[i] != ' ' && i != strlen(cmd))
+			while (i != strlen(cmd))
 			{
 				file_length *= 10;
 				file_length += (cmd[i] - '0');
