@@ -71,4 +71,11 @@ public:
 
 	//parameter checking
 	bool parse_arg(int argc, char** argv);
+
+	//when receive a info,first use it to write total packet number,then write file leghth
+	//when receive a packet,use it write packet No.
+	bool write_logfile(char* path, int number);
+
+	//check whether a file need to re-upload
+	bool check_file(char* file_name, int file_length);
 };

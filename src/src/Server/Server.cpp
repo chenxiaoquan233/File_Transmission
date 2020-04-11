@@ -406,3 +406,58 @@ bool Server::parse_arg(int argc, char** argv)
 	}
 	return false;
 }
+
+bool Server::write_logfile(char* path, int number) {
+	char logfile_path[50];
+	sprintf(logfile_path, "%s.FTlog", path);
+	FILE* logfile = fopen(logfile_path, "ab");
+	fwrite(&number, 4, 1, logfile);
+	fclose(logfile);
+	return true;
+}
+
+bool Server::check_file(char* file_name, int file_length) {
+	char logfile_path[50];
+	sprintf(logfile_path, "%s.FTlog", file_name);
+	//FILE * file=fopen(file_name, "rb");
+	FILE* logfile;
+	logfile = fopen(logfile_path, "rb");
+	//if(file)
+	if (fopen(logfile_path, "rb")) {
+		int* total_packet_num = new int;
+		int* log_file_length = new int;
+		fread(total_packet_num, 4, 1, logfile);
+		fread(log_file_length, 4, 1, logfile);
+		if (*log_file_length == file_length) {
+			bool* loaded_pack_num = new bool[*total_packet_num + 1];
+			for (int i = 1; i <= *total_packet_num; i++)loaded_pack_num[i] = false;
+			int total_loaded_pack_num = 1;
+			int* temp = new int;
+			for (; !feof(logfile); total_loaded_pack_num++) {
+				fread(temp, 4, 1, logfile);
+				if (loaded_pack_num[*temp] == true)total_loaded_pack_num--;
+				loaded_pack_num[*temp] = true;
+			}
+			total_loaded_pack_num--;
+			void* need_send = malloc(sizeof(int) * (*total_packet_num - total_loaded_pack_num + 1));
+			((int*)need_send)[0] = *total_packet_num - total_loaded_pack_num;
+			for (int i = 1, j = 1; i <= *total_packet_num; i++) {
+				if (loaded_pack_num[i] == false) {
+					((int*)need_send)[j] = i;
+					j++;
+				}
+			}
+			//for(int i=0;i<sizeof(int)*(*total_packet_num-total_loaded_pack_num+1);i++)
+			  //  cout<<(int)(((char *)need_send)[i])<<endl;
+			sendto(sock, (char *)need_send, sizeof(int)*(*total_packet_num-total_loaded_pack_num+1), 0,(struct sockaddr*) & serv_addr, sizeof(serv_addr));
+			fclose(logfile);
+			return true;
+		}
+	}
+
+	void* need_send = new int;
+	((int*)need_send)[0] = 0;
+	sendto(sock, (char*)need_send, 4, 0,(struct sockaddr*) & serv_addr, sizeof(serv_addr));
+	fclose(logfile);
+	return false;
+}
