@@ -51,7 +51,7 @@ parse_arg(int argc, char** argv)
 首先判断参数是否合法  
 再判断路径是否存在  
 再判断是否有读权限
-#### 4.
+#### 完成4.
 添加一个读取文件路径的函数
 ```
 void read_path(char* path, char* buffer)---->完成 int read_path(const char* path,char *buffer[]) 
@@ -77,8 +77,8 @@ INFO
 若长度过长需要切片  
 命令sock收到服务端的"INFO"作为回传则表示成功，否则重传  
 超过次数后告诉用户失败  
-#### 6.
-添加一个常量 SEND_FREQ 表示最大重传次数
+#### 完成6.
+添加一个常量 SEND_FREQ 表示最大重传次数，暂定为10
 #### 7.完成
 添加压缩函数(或调用库)
 ```
