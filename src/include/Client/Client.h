@@ -58,4 +58,7 @@ public:
 	int read_path(const char* path, char* buffer[]);
     
 	void send_cmd(char* cmd);
+	
+
+	bool send_path_info(char* buffer);
 };

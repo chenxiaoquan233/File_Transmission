@@ -280,3 +280,49 @@ int Client::read_path(const char* path, char* buffer[])
 #endif
     return foldernumber;
 }
+
+bool Client::send_path_info(char* buffer)
+{
+    char* info = "INFO";
+    send_cmd(info);
+    int port = -1;
+    while (port == -1)port = get_port();
+    set_port(port);
+    if (strlen(buffer) > MAX_PACKET_DATA_BYTE_LENGTH)
+    {
+        for (int i = 0; i < strlen(buffer) / MAX_PACKET_DATA_BYTE_LENGTH + 1; i++)
+        {
+            char* paths = new char[MAX_PACKET_DATA_BYTE_LENGTH];
+            for (int j = 0; j < MAX_PACKET_DATA_BYTE_LENGTH; j++)
+            {
+                paths[j] = buffer[i * MAX_PACKET_DATA_BYTE_LENGTH + j];
+            }
+            for(int k=0;k< SEND_FREQ;k++)
+            {
+                int res = sendto(cmd_sock, paths, strlen(paths) + UPD_HEADER_LENGTH, 0, (struct sockaddr*) & serv_addr, sizeof(serv_addr));
+                //UNCOMPLETED!!!Need to determine whether the return is "info"
+                if (res != -1)
+                {
+                    return true;
+                }
+            }
+            std::cout << "Transmission failed, retransmission limit reached" << std::endl;
+            return false;
+        }
+    }
+    else
+    {
+        for (int k = 0; k < SEND_FREQ; k++)
+        {
+            int res = sendto(cmd_sock, buffer, strlen(buffer) + UPD_HEADER_LENGTH, 0, (struct sockaddr*) & serv_addr, sizeof(serv_addr));
+            //UNCOMPLETED!!!Need to determine whether the return is "info"
+            if (res != -1)
+            {
+                return true;
+            }
+        }
+        std::cout << "Transmission failed, retransmission limit reached" << std::endl;
+        return false;
+    }
+
+}
