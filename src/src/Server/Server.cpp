@@ -341,7 +341,7 @@ bool Server::parse_path()
 	set_dir(address);
 	return res != -1;
 }
-void Server::parse_cmd()
+bool Server::parse_cmd()
 {
 	char* cmd = new char[256];
 	memset(cmd, 0, 256);
@@ -359,14 +359,33 @@ void Server::parse_cmd()
 	else if (cmd[0] == 'S' && cmd[1] == 'E' && cmd[2] == 'N' && cmd[3] == 'D')
 	{
 		char* file_name = new char[100];
-		int i = 5;
+		int i = 5,file_length=0;
 		memset(file_name, 0, 100);
 		while (cmd[i] != ' ' && i != strlen(cmd))
 		{
 			file_name[i - 5] = cmd[i];
 			i++;
 		}
-		check_file(file_name);
+		i++;
+		while (cmd[i] != ' ' && i != strlen(cmd))
+		{
+			i++;
+		}
+		if (i != strlen(cmd))
+		{
+			i++;
+			while (cmd[i] != ' ' && i != strlen(cmd))
+			{
+				file_length *= 10;
+				file_length += (cmd[i] - '0');
+				i++;
+			}
+			check_file(file_name, file_length);
+		}
+		else
+		{
+			return false;
+		}
 	}
 	else if (cmd[0] == 'P' && cmd[1] == 'O' && cmd[2] == 'R' && cmd[3] == 'T' && cmd[4] == ' ')
 	{
@@ -380,8 +399,9 @@ void Server::parse_cmd()
 	}
 	else
 	{
-		printf("Function parse_cmd() cmd error");
+		return false;
 	}
+	return true;
 }
 bool Server::parse_arg(int argc, char** argv)
 {
