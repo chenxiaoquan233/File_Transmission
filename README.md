@@ -138,10 +138,10 @@ parse_path(char* path)
 set_dir(char* path)
 ```
 对path中每一个路径进行检查，若不存在该文件夹则建立文件夹
-#### 5.
+#### 5.完成
 添加文件检查函数
 ```
-check_file(char* file_name)
+check_file(char* file_name,int file_length)
 ```
 ```
 if 文件存在  
@@ -150,7 +150,8 @@ if 文件存在
             断点续传
 其他情况皆从头开始传输
 ```
-回传偏移量 断点续传则是文件长度，重传则为0
+参数需要文件名和INFO中待传文件的文件长度
+回传待传递的包，第一个int为待传递的包的数量，后续int为待传递的包的序号，重传则第一个int为0
 #### 6.完成
 添加检查端口函数
 开始端口为
@@ -170,7 +171,9 @@ PORT 端口号
 int unzip(char* src, char* dest, int src_len)
 ```
 将src中长度为src_len的数据解压到dest，返回解压后数据长度
-#### 8.
+#### 8.完成
+在首次接受到INFO时，使用write_logfile函数写入包数量，再次调用写入文件长度
+之后再每次接受包时写入这个包的序号
 修改接收文件函数
 每一个文件若未接收完全，则先将已传输的合并，再生成一个日志文件
 格式为"文件名.FTlog"
