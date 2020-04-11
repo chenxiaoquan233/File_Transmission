@@ -12,11 +12,9 @@ private:
 	sockaddr_in serv_addr;
 #ifdef _WIN32
 	SOCKET cmd_sock;
-	SOCKET* data_sock;
 #endif
 #ifdef __linux__
 	int cmd_sock;
-	int* data_sock;
 #endif
 
 	
@@ -40,11 +38,24 @@ public:
 	//return status
 	bool set_up_connection(const char* ip_addr, int port);
 
+	//change port id
+	//return status
+	bool set_port(int port);
+	
+	
 	//send packet on connection
 	//return status
 	bool send_packet(int len);
 
 	bool get_ack();
 
+	//rev offset from server
+	int get_offset();
+
+	//rev port id from server
+	int get_port();
+
 	int read_path(const char* path, char* buffer[]);
+    
+	void send_cmd(char* cmd);
 };

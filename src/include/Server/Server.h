@@ -67,7 +67,7 @@ public:
 	bool parse_path();
 
 	//analytical command
-	void parse_cmd();
+	bool parse_cmd();
 
 	//parameter checking
 	bool parse_arg(int argc, char** argv);
