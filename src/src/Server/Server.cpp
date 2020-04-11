@@ -121,6 +121,7 @@ bool Server::recv_whole_file()
 			send_ack(slice_num);
 			char file_name[100];
 			printf("%s,%d,%d\n", file_path, slice_num, data->get_slice_len());
+			write_logfile(file_path,slice_num);
 			sprintf(file_name, "%s.%03d", file_path, slice_num);
 			FILE* output_file_slice = fopen(file_name, "wb");
 			fwrite(file_slice, 1, data_len, output_file_slice);
@@ -366,7 +367,10 @@ void Server::parse_cmd()
 			file_name[i - 5] = cmd[i];
 			i++;
 		}
-		check_file(file_name);
+		if (!check_file(file_name,file_length)) {
+			write_logfile(file_name,total_packet_num);
+			write_logfile(file_name, file_length);
+		}
 	}
 	else if (cmd[0] == 'P' && cmd[1] == 'O' && cmd[2] == 'R' && cmd[3] == 'T' && cmd[4] == ' ')
 	{
@@ -459,5 +463,6 @@ bool Server::check_file(char* file_name, int file_length) {
 	((int*)need_send)[0] = 0;
 	sendto(sock, (char*)need_send, 4, 0,(struct sockaddr*) & serv_addr, sizeof(serv_addr));
 	fclose(logfile);
+	remove(logfile_path);
 	return false;
 }
