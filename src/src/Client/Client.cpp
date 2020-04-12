@@ -9,14 +9,17 @@ Client::~Client()
 {
 
 }
+
 void Client::send_cmd(char* cmd)
 {
-
+    puts(cmd);
+    int res = sendto(cmd_sock, cmd, strlen(cmd), 0, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
 }
+
+
 int Client::send_file(char* input_file_name)
 {
     file = new File(input_file_name, MAX_PACKET_DATA_BYTE_LENGTH, 0);
-     
     char* cmd;
     if ((cmd = (char*)malloc(sizeof(char) * MAX_PACKET_DATA_BYTE_LENGTH)) == NULL)
     {
@@ -24,11 +27,10 @@ int Client::send_file(char* input_file_name)
     }
     while (!file->eof())
     {
-        read_file(input_file_name);
+        read_file_slice(input_file_name);
         int slice_len = data->get_slice_len();
-        bool res = send_packet(slice_len);
         
-        sprintf(cmd, "SEND %s", input_file_name);
+        sprintf(cmd, "SEND %s %d %d", input_file_name, file->get_pkt_num(), file->get_file_len());
         send_cmd(cmd);
         int offs = -1;
         while (offs == -1)offs = get_offset();
@@ -38,9 +40,9 @@ int Client::send_file(char* input_file_name)
         int port = -1;
         while (port == -1)port = get_port();
 
-        set_port(port);
+        set_port(&cmd_sock, port);
 
-
+        bool res = send_packet(slice_len);
     }
     /*
     while (!file->eof())
@@ -57,7 +59,7 @@ int Client::send_file(char* input_file_name)
     */
 }
 
-bool Client::read_file(char* input_file_name)
+bool Client::read_file_slice(char* input_file_name)
 {
     if(data) delete data;//data equals nullptr the first time, but not after
     data = new pkt_load();
@@ -74,7 +76,6 @@ bool Client::read_file(char* input_file_name)
     //continue from previous point
     FILE* file_ptr = file->get_file();
     int file_offset = file->get_base_offset() + (slice_num - 1) * file->get_slice_len();
-    printf("%d\n", file_offset);
     fseek(file_ptr, file_offset, SEEK_SET);
 
     int header_offset = file->get_offset();
@@ -83,32 +84,46 @@ bool Client::read_file(char* input_file_name)
     return res;
 }
 
-bool Client::set_up_connection(const char* ip_addr, int port)
-{
 #ifdef _WIN32
+bool Client::sock_init(SOCKET* sock, const char* ip_addr, int port)
+#endif
+#ifdef __linux__
+bool Client::sock_init(int* sock, const char* ip_addr, int port)
+#endif
+{
+    #ifdef _WIN32
     WSADATA wsaData;
     WSAStartup(MAKEWORD(2, 2), &wsaData);
     cmd_sock = socket(AF_INET, SOCK_DGRAM, 0);
-#endif
-#ifdef __linux__
-    cmd_sock = socket(AF_INET, SOCK_DGRAM, 0);
-#endif
+    #endif
+
+    #ifdef __linux__
+    *sock = socket(AF_INET, SOCK_DGRAM, 0);
+    #endif
+
     memset(&serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = inet_addr(ip_addr);
     serv_addr.sin_port = htons(port);
-    return set_port(port);
+    return set_port(sock, port);
 }
-bool Client::set_port(int port)
+
+#ifdef _WIN32
+bool Client::set_port(SOCKET* sock, int port)
+#endif
+#ifdef __linux__
+bool Client::set_port(int* sock, int port)
+#endif
 {
     serv_addr.sin_port = htons(port);
-    if (bind(cmd_sock, (struct sockaddr*) & serv_addr, sizeof(sockaddr)) == -1)
+    if (bind(*sock, (struct sockaddr*) & serv_addr, sizeof(sockaddr)) == -1)
         return false;
     return true;
 }
+
 bool Client::send_packet(int len)
 {
-    int res=sendto(cmd_sock, data->get_file_slice(), len + UPD_HEADER_LENGTH, 0, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
+    int res=sendto(data_sock, data->get_file_slice(), len + UPD_HEADER_LENGTH, 0, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
     return res!=-1;
 }
 
@@ -201,7 +216,7 @@ bool Client::get_ack()
 int Client::read_path(const char* path, char* buffer[])
 {
     static int foldernumber = 0;
-#ifdef WIN32
+    #ifdef WIN32
     intptr_t handle;
     _finddata_t findData;
     char* dir = new char[1000];
@@ -241,7 +256,8 @@ int Client::read_path(const char* path, char* buffer[])
         }
     } while (_findnext(handle, &findData) == 0);
     _findclose(handle);
-#endif
+    #endif
+
 #ifdef __linux__
     struct dirent* ent = NULL;
     DIR* pDir;
@@ -287,7 +303,7 @@ bool Client::send_path_info(char* buffer)
     send_cmd(info);
     int port = -1;
     while (port == -1)port = get_port();
-    set_port(port);
+    set_port(&cmd_sock, port);
     if (strlen(buffer) > MAX_PACKET_DATA_BYTE_LENGTH)
     {
         for (int i = 0; i < strlen(buffer) / MAX_PACKET_DATA_BYTE_LENGTH + 1; i++)
@@ -325,4 +341,14 @@ bool Client::send_path_info(char* buffer)
         return false;
     }
 
+}
+
+#ifdef _WIN32
+SOCKET* Client::get_cmd_sock()
+#endif
+#ifdef __linux__
+int* Client::get_cmd_sock()
+#endif
+{
+    return &cmd_sock;
 }

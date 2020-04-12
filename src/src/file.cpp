@@ -34,7 +34,7 @@ int File::get_file_len()
 
 bool File::eof()
 {
-    return feof(file_ptr);
+    return get_pkt_num() == 0;
 }
 
 FILE* File::get_file()

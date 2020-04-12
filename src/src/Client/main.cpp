@@ -68,7 +68,7 @@ bool parse_arg(int argc, char** argv, char** file_path, char** ip_addr, int* por
     }
     else
     {
-        puts("Wrong arg numbers!");
+        puts("Wrong arg number!");
         exit(0);
     }
     return dir_flag;
@@ -85,7 +85,7 @@ int main(int argc, char** argv)
     {
         dir_flag = parse_arg(argc, argv, &file_path, &ip_addr, &port);
         Client* client = new Client();
-        client->set_up_connection(ip_addr, port);
+        client->sock_init(client->get_cmd_sock(), ip_addr, port);
         if(dir_flag)
         {
             char* test[100];

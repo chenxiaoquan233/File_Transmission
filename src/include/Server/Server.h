@@ -10,11 +10,11 @@ private:
 	//shore the received data for a short time
 	char* buffer = nullptr;
 #ifdef _WIN32
-    SOCKET sock;
+    SOCKET cmd_sock;
 	SOCKET data_sock;
 #endif
 #ifdef __linux__
-	int sock;
+	int cmd_sock;
 	int data_sock;
 #endif
 public:

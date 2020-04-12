@@ -12,9 +12,11 @@ private:
 	sockaddr_in serv_addr;
 #ifdef _WIN32
 	SOCKET cmd_sock;
+	SOCKET data_sock
 #endif
 #ifdef __linux__
 	int cmd_sock;
+	int data_sock;
 #endif
 
 	
@@ -32,16 +34,25 @@ public:
 	//stored in file_slice
 	//length constrainted by MAX_PACKET_DATA_BYTE_LENGTH in base.h
 	//return status
-	bool read_file(char* input_file_name);
+	bool read_file_slice(char* input_file_name);
 
 	//set up ip connection to a server
 	//return status
-	bool set_up_connection(const char* ip_addr, int port);
+	#ifdef _WIN32
+	bool sock_init(SOCKET* sock, const char* ip_addr, int port);
+	#endif
+	#ifdef __linux__
+	bool sock_init(int* sock, const char* ip_addr, int port);
+	#endif
 
 	//change port id
 	//return status
-	bool set_port(int port);
-	
+	#ifdef _WIN32
+	bool set_port(Socket* sock, int port);
+	#endif
+	#ifdef __linux__
+	bool set_port(int* sock, int port);
+	#endif
 	
 	//send packet on connection
 	//return status
@@ -59,6 +70,12 @@ public:
     
 	void send_cmd(char* cmd);
 	
-
 	bool send_path_info(char* buffer);
+
+	#ifdef _WIN32
+	SOCKET* get_cmd_sock();
+	#endif
+	#ifdef __linux__
+	int* get_cmd_sock();
+	#endif
 };

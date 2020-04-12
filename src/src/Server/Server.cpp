@@ -15,31 +15,33 @@ bool Server::set_listen(int port)
 #ifdef _WIN32
     WSADATA wsaData;
     WSAStartup(MAKEWORD(2, 2), &wsaData);
-    sock = socket(AF_INET, SOCK_DGRAM, 0);
+    cmd_sock = socket(AF_INET, SOCK_DGRAM, 0);
 #endif
 #ifdef __linux__
-    sock = socket(AF_INET, SOCK_DGRAM, 0);
+    cmd_sock = socket(AF_INET, SOCK_DGRAM, 0);
 #endif
     memset(&serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    serv_addr.sin_addr.s_addr = INADDR_ANY;
     serv_addr.sin_port = htons(port);
     int on = 1;
-#ifdef __linux__
-    if(setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) == -1)
-#endif
+
 #ifdef WIN32
-		if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&on, sizeof(on)) == -1)
+	if (setsockopt(cmd_sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&on, sizeof(on)) == -1)
 #endif
-		{
-			return false;
-		}
-    if(bind(sock, (struct sockaddr*)&serv_addr, sizeof(sockaddr)) == -1)
+#ifdef __linux__
+    if(setsockopt(cmd_sock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) == -1)
+#endif
 	{
+		perror("reuse");
+		return false;
+	}
+    if(bind(cmd_sock, (struct sockaddr*)&serv_addr, sizeof(sockaddr)) == -1)
+	{
+		perror("sock_here");
 		return false;
 	}
     return true;
-	//printf("%d\n",check_port(8079));
 }
 
 int Server::check_port(int cmd_port) {
@@ -48,7 +50,7 @@ int Server::check_port(int cmd_port) {
 	data_sock = socket(AF_INET, SOCK_DGRAM, 0);
 #endif
 #ifdef __linux__
-	sock = socket(AF_INET, SOCK_DGRAM, 0);
+	cmd_sock = socket(AF_INET, SOCK_DGRAM, 0);
 #endif
 	memset(&serv_addr2, 0, sizeof(serv_addr2));
 	serv_addr2.sin_family = AF_INET;
@@ -58,8 +60,8 @@ int Server::check_port(int cmd_port) {
 	bind(data_sock, (LPSOCKADDR)&serv_addr2, sizeof(serv_addr2));
 	while (WSAGetLastError() == WSAEADDRINUSE)
 	{
-		//¶Ë¿ÚÒÑ±»Õ¼ÓÃ
-		//printf("Õ¼ÓÃ");
+		//ï¿½Ë¿ï¿½ï¿½Ñ±ï¿½Õ¼ï¿½ï¿½
+		//printf("Õ¼ï¿½ï¿½");
 		start_port++;
 		memset(&serv_addr2, 0, sizeof(serv_addr2));
 		serv_addr2.sin_family = AF_INET;
@@ -69,7 +71,7 @@ int Server::check_port(int cmd_port) {
 	}
 #endif
 #ifdef __linux__
-	while (bind(sock, (struct sockaddr*) & serv_addr2, sizeof(sockaddr)) == -1)
+	while (bind(cmd_sock, (struct sockaddr*) & serv_addr2, sizeof(sockaddr)) == -1)
 	{
 		start_port++;
 		memset(&serv_addr2, 0, sizeof(serv_addr2));
@@ -80,7 +82,7 @@ int Server::check_port(int cmd_port) {
 #endif
 	char answer_port[10];
 	sprintf(answer_port, "PORT %d", start_port);
-	sendto(sock, answer_port, strlen(answer_port), 0, (struct sockaddr*) & serv_addr, sizeof(serv_addr));
+	sendto(cmd_sock, answer_port, strlen(answer_port), 0, (struct sockaddr*) & serv_addr, sizeof(serv_addr));
 	return start_port;
 }
 
@@ -95,7 +97,7 @@ bool Server::recv_packet()
 	int nSize = sizeof(sockaddr);
 #endif
     data->create_file_slice(MAX_PACKET_DATA_BYTE_LENGTH);
-    int res = recvfrom(sock, data->get_file_slice(), MAX_PACKET_DATA_BYTE_LENGTH, 0, (struct sockaddr*)&serv_addr, &nSize);
+    int res = recvfrom(cmd_sock, data->get_file_slice(), MAX_PACKET_DATA_BYTE_LENGTH, 0, (struct sockaddr*)&serv_addr, &nSize);
 	data->set_slice_len(res);
     return res != -1;
 }
@@ -188,9 +190,8 @@ bool Server::send_ack(int num)
 	char ack[4];
 	printf("packet %d get\n", num);
 	sprintf(ack, "%d", packet_serial_number);
-	int res = sendto(sock, ack, strlen(ack), 0, (struct sockaddr*) & serv_addr, sizeof(serv_addr));
+	int res = sendto(cmd_sock, ack, strlen(ack), 0, (struct sockaddr*) & serv_addr, sizeof(serv_addr));
 	return res != -1;
-
 }
 
 int Server::read_FILEinformation(FILE*& output_file, char* origin_data, int& data_length)
@@ -336,61 +337,57 @@ bool Server::parse_path()
 #ifdef WIN32
 	int nSize = sizeof(sockaddr);
 #endif
-	int res = recvfrom(sock, address, sizeof(address), 0, (struct sockaddr*) & serv_addr, &nSize);
+	int res = recvfrom(cmd_sock, address, sizeof(address), 0, (struct sockaddr*) & serv_addr, &nSize);
 	sprintf(r_cmd, "%s", "INFO");
-	res = sendto(sock, r_cmd, 4, 0, (struct sockaddr*) & serv_addr, sizeof(serv_addr));
+	res = sendto(cmd_sock, r_cmd, 4, 0, (struct sockaddr*) & serv_addr, sizeof(serv_addr));
 	set_dir(address);
 	return res != -1;
 }
+
 bool Server::parse_cmd()
 {
 	char* cmd = new char[256];
 	memset(cmd, 0, 256);
+
 #ifdef __linux__
 	socklen_t nSize = sizeof(sockaddr);
 #endif
+
 #ifdef WIN32
 	int nSize = sizeof(sockaddr);
 #endif
-	int res = recvfrom(sock, cmd, sizeof(cmd), 0, (struct sockaddr*) & serv_addr, &nSize);
+
+	recvfrom(cmd_sock, cmd, 256 * sizeof(char), 0, (struct sockaddr*) & serv_addr, &nSize);
+
 	if (cmd[0] == 'I' && cmd[1] == 'N' && cmd[2] == 'F' && cmd[3] == 'O')
 	{
 		parse_path();
 	}
+
 	else if (cmd[0] == 'S' && cmd[1] == 'E' && cmd[2] == 'N' && cmd[3] == 'D')
 	{
-		char* file_name = new char[100];
 		int i = 5;
+		int file_len = 0;
+		int tot_pkt_num = 0;
+		char* file_name = new char[100];
 		memset(file_name, 0, 100);
-		while (cmd[i] != ' ' && i != strlen(cmd))
-		{
-			file_name[i - 5] = cmd[i];
-			i++;
-		}
-		if (!check_file(file_name, file_length)) {
-			write_logfile(file_name, total_packet_num);
-			write_logfile(file_name, file_length);
-		}
+
+		// SEND filename pkt_num file_length
+		while(i < strlen(cmd) && cmd[i] != ' ')
+			file_name[i - 5] = cmd[i], i++;
 		i++;
-		while (cmd[i] != ' ' && i != strlen(cmd))
+		while(i < strlen(cmd) && cmd[i] != ' ')
+			tot_pkt_num *= 10, tot_pkt_num += cmd[i++] - '0';
+		i++;
+		while(i < strlen(cmd) && cmd[i] != ' ')
+			file_len *= 10, file_len += cmd[i++] - '0';
+
+		if(!check_file(file_name, file_len)) 
 		{
-			i++;
+			write_logfile(file_name, tot_pkt_num);
+			write_logfile(file_name, file_len);
 		}
-		if (i != strlen(cmd))
-		{
-			i++;
-			while (i != strlen(cmd))
-			{
-				file_length *= 10;
-				file_length += (cmd[i] - '0');
-				i++;
-			}
-			check_file(file_name, file_length);
-		}
-		else
-		{
-			return false;
-		}
+		puts("here");
 	}
 	else if (cmd[0] == 'P' && cmd[1] == 'O' && cmd[2] == 'R' && cmd[3] == 'T' && cmd[4] == ' ')
 	{
@@ -408,31 +405,10 @@ bool Server::parse_cmd()
 	}
 	return true;
 }
-bool Server::parse_arg(int argc, char** argv)
-{
-	if (argc != 4)
-	{
-		printf("wrong number of parameters\n");
-		return false;
-	}
-	if ((access(argv[1], 0)) != -1)
-	{
-		if ((access(argv[1], 6)) == -1)
-		{
-			printf("File does not have read-write permission\n");
-			return false;
-		}
-		return true;
-	}
-	else
-	{
-		printf("File does not exist\n");
-		return false;
-	}
-	return false;
-}
 
-bool Server::write_logfile(char* path, int number) {
+
+bool Server::write_logfile(char* path, int number) 
+{
 	char logfile_path[50];
 	sprintf(logfile_path, "%s.FTlog", path);
 	FILE* logfile = fopen(logfile_path, "ab");
@@ -441,49 +417,56 @@ bool Server::write_logfile(char* path, int number) {
 	return true;
 }
 
-bool Server::check_file(char* file_name, int file_length) {
+bool Server::check_file(char* file_name, int file_length) 
+{
 	char logfile_path[50];
 	sprintf(logfile_path, "%s.FTlog", file_name);
-	//FILE * file=fopen(file_name, "rb");
 	FILE* logfile;
 	logfile = fopen(logfile_path, "rb");
-	//if(file)
-	if (fopen(logfile_path, "rb")) {
-		int* total_packet_num = new int;
-		int* log_file_length = new int;
-		fread(total_packet_num, 4, 1, logfile);
-		fread(log_file_length, 4, 1, logfile);
-		if (*log_file_length == file_length) {
-			bool* loaded_pack_num = new bool[*total_packet_num + 1];
-			for (int i = 1; i <= *total_packet_num; i++)loaded_pack_num[i] = false;
+	if (logfile) 
+	{
+		int total_packet_num = 0;
+		int log_file_length = 0;
+		fread(&total_packet_num, 4, 1, logfile);
+		fread(&log_file_length, 4, 1, logfile);
+		if (log_file_length == file_length) 
+		{
+			printf("%d, %d\n", log_file_length, file_length);
+			bool* loaded_pack_num = new bool[total_packet_num + 1];
+			for (int i = 1; i <= total_packet_num; i++)loaded_pack_num[i] = false;
 			int total_loaded_pack_num = 1;
-			int* temp = new int;
+			int temp = 0;
 			for (; !feof(logfile); total_loaded_pack_num++) {
-				fread(temp, 4, 1, logfile);
-				if (loaded_pack_num[*temp] == true)total_loaded_pack_num--;
-				loaded_pack_num[*temp] = true;
+				fread(&temp, 4, 1, logfile);
+				if (loaded_pack_num[temp] == true)total_loaded_pack_num--;
+				loaded_pack_num[temp] = true;
 			}
 			total_loaded_pack_num--;
-			void* need_send = malloc(sizeof(int) * (*total_packet_num - total_loaded_pack_num + 1));
-			((int*)need_send)[0] = *total_packet_num - total_loaded_pack_num;
-			for (int i = 1, j = 1; i <= *total_packet_num; i++) {
-				if (loaded_pack_num[i] == false) {
+			void* need_send = malloc(sizeof(int) * (total_packet_num - total_loaded_pack_num + 1));
+			((int*)need_send)[0] = total_packet_num - total_loaded_pack_num;
+			for (int i = 1, j = 1; i <= total_packet_num; i++) 
+			{
+				if (loaded_pack_num[i] == false) 
+				{
 					((int*)need_send)[j] = i;
 					j++;
 				}
 			}
 			//for(int i=0;i<sizeof(int)*(*total_packet_num-total_loaded_pack_num+1);i++)
 			  //  cout<<(int)(((char *)need_send)[i])<<endl;
-			sendto(sock, (char *)need_send, sizeof(int)*(*total_packet_num-total_loaded_pack_num+1), 0,(struct sockaddr*) & serv_addr, sizeof(serv_addr));
+			char offset[256];
+
+			sendto(cmd_sock, (char *)need_send, sizeof(int) * (total_packet_num-total_loaded_pack_num+1), 0,(struct sockaddr*) & serv_addr, sizeof(serv_addr));
 			fclose(logfile);
 			return true;
 		}
 	}
 
-	void* need_send = new int;
-	((int*)need_send)[0] = 0;
-	sendto(sock, (char*)need_send, 4, 0,(struct sockaddr*) & serv_addr, sizeof(serv_addr));
-	fclose(logfile);
+	//void* need_send = new int;
+	//((int*)need_send)[0] = 0;
+	char offset[256];
+	sprintf(offset, "OFFS %d", 0);
+	sendto(cmd_sock, offset, 6, 0,(struct sockaddr*) & serv_addr, sizeof(serv_addr));
 	remove(logfile_path);
 	return false;
 }
