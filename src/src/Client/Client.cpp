@@ -299,7 +299,7 @@ int Client::read_path(const char* path, char* buffer[])
 
 bool Client::send_path_info(char* buffer)
 {
-    char* info = "INFO";
+    char info[5] = "INFO";
     send_cmd(info);
     int port = -1;
     while (port == -1)port = get_port();

@@ -7,9 +7,19 @@ bool parse_arg(int argc, char** argv)
 		puts("Wrong arg number!");
 		exit(0);
 	}
+	#ifdef _WIN32
+	if ((_access(argv[1], 0)) != -1)
+	#endif
+	#ifdef __linux__
 	if ((access(argv[1], 0)) != -1)
+	#endif
 	{
-		if ((access(argv[1], 6)) == -1)
+	#ifdef _WIN32
+		if ((_access(argv[1], 6)) == -1)
+	#endif
+	#ifdef __linux__
+		if ((access(argv[1], 6)) == -1
+	#endif
 		{
 			puts("Read or Write Permission Denied!");
 			exit(0);
