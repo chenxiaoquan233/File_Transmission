@@ -12,7 +12,7 @@ private:
 	sockaddr_in serv_addr;
 #ifdef _WIN32
 	SOCKET cmd_sock;
-	SOCKET data_sock
+	SOCKET data_sock;
 #endif
 #ifdef __linux__
 	int cmd_sock;
@@ -48,7 +48,7 @@ public:
 	//change port id
 	//return status
 	#ifdef _WIN32
-	bool set_port(Socket* sock, int port);
+	bool set_port(SOCKET* sock, int port);
 	#endif
 	#ifdef __linux__
 	bool set_port(int* sock, int port);
