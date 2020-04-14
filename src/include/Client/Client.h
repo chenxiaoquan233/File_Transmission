@@ -10,19 +10,20 @@ private:
 	File* file;
 	pkt_load* data = nullptr;
 	sockaddr_in serv_addr;
+	char* ip_addr;
 #ifdef _WIN32
 	SOCKET cmd_sock;
-	SOCKET data_sock;
+	SOCKET* data_sock;
 #endif
 #ifdef __linux__
 	int cmd_sock;
-	int data_sock;
+	int* data_sock;
 #endif
 
 	
 public:
 	//constructor
-	Client();
+	Client(char* ip_addr);
 
 	//destructor
 	~Client();
@@ -42,7 +43,7 @@ public:
 	bool sock_init(SOCKET* sock, const char* ip_addr, int port);
 	#endif
 	#ifdef __linux__
-	bool sock_init(int* sock, const char* ip_addr, int port);
+	bool sock_init(int* sock, int port);
 	#endif
 
 	//change port id
@@ -78,4 +79,5 @@ public:
 	#ifdef __linux__
 	int* get_cmd_sock();
 	#endif
+
 };

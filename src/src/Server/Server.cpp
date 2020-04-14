@@ -1,8 +1,8 @@
 #include "../../include/Server/Server.h"
 
-Server::Server()
+Server::Server(int port)
 {
-
+	cmd_port = port;
 }
 
 Server::~Server()
@@ -10,53 +10,54 @@ Server::~Server()
 
 }
 
-bool Server::set_listen(int port)
+bool Server::set_listen()
 {
-#ifdef _WIN32
+	#ifdef _WIN32
     WSADATA wsaData;
     WSAStartup(MAKEWORD(2, 2), &wsaData);
     cmd_sock = socket(AF_INET, SOCK_DGRAM, 0);
-#endif
-#ifdef __linux__
+	#endif
+	#ifdef __linux__
     cmd_sock = socket(AF_INET, SOCK_DGRAM, 0);
-#endif
+	#endif
     memset(&serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = INADDR_ANY;
-    serv_addr.sin_port = htons(port);
+    serv_addr.sin_port = htons(cmd_port);
     int on = 1;
 
-#ifdef WIN32
+	#ifdef WIN32
 	if (setsockopt(cmd_sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&on, sizeof(on)) == -1)
-#endif
-#ifdef __linux__
+	#endif
+	#ifdef __linux__
     if(setsockopt(cmd_sock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) == -1)
-#endif
+	#endif
 	{
 		perror("reuse");
 		return false;
 	}
     if(bind(cmd_sock, (struct sockaddr*)&serv_addr, sizeof(sockaddr)) == -1)
 	{
-		perror("sock_here");
+		perror("bind");
 		return false;
 	}
     return true;
 }
 
-int Server::check_port(int cmd_port) {
+int Server::check_port() 
+{
 	static int start_port = cmd_port > 1024 ? cmd_port + 1 : 1024;
-#ifdef _WIN32
+	#ifdef _WIN32
 	data_sock = socket(AF_INET, SOCK_DGRAM, 0);
-#endif
-#ifdef __linux__
-	cmd_sock = socket(AF_INET, SOCK_DGRAM, 0);
-#endif
+	#endif
+	#ifdef __linux__
+	data_sock = socket(AF_INET, SOCK_DGRAM, 0);
+	#endif
 	memset(&serv_addr2, 0, sizeof(serv_addr2));
 	serv_addr2.sin_family = AF_INET;
 	serv_addr2.sin_addr.s_addr = htonl(INADDR_ANY);
 	serv_addr2.sin_port = htons(start_port);
-#ifdef _WIN32
+	#ifdef _WIN32
 	bind(data_sock, (LPSOCKADDR)&serv_addr2, sizeof(serv_addr2));
 	while (WSAGetLastError() == WSAEADDRINUSE)
 	{
@@ -69,9 +70,9 @@ int Server::check_port(int cmd_port) {
 		serv_addr2.sin_port = htons(start_port);
 		bind(data_sock, (LPSOCKADDR)&serv_addr2, sizeof(serv_addr2));
 	}
-#endif
-#ifdef __linux__
-	while (bind(cmd_sock, (struct sockaddr*) & serv_addr2, sizeof(sockaddr)) == -1)
+	#endif
+	#ifdef __linux__
+	while (bind(data_sock, (struct sockaddr*) & serv_addr2, sizeof(sockaddr)) == -1)
 	{
 		start_port++;
 		memset(&serv_addr2, 0, sizeof(serv_addr2));
@@ -79,7 +80,7 @@ int Server::check_port(int cmd_port) {
 		serv_addr2.sin_addr.s_addr = htonl(INADDR_ANY);
 		serv_addr2.sin_port = htons(start_port);
 	}
-#endif
+	#endif
 	char answer_port[10];
 	sprintf(answer_port, "PORT %d", start_port);
 	sendto(cmd_sock, answer_port, strlen(answer_port), 0, (struct sockaddr*) & serv_addr, sizeof(serv_addr));
@@ -90,14 +91,17 @@ bool Server::recv_packet()
 {
     if(data) delete data;//data equals nullptr the first time, but not after
     data = new pkt_load();
-#ifdef __linux__
+
+	#ifdef __linux__
     socklen_t nSize = sizeof(sockaddr);
-#endif
-#ifdef WIN32
+	#endif
+	#ifdef WIN32
 	int nSize = sizeof(sockaddr);
-#endif
+	#endif
+
     data->create_file_slice(MAX_PACKET_DATA_BYTE_LENGTH);
-    int res = recvfrom(cmd_sock, data->get_file_slice(), MAX_PACKET_DATA_BYTE_LENGTH, 0, (struct sockaddr*)&serv_addr, &nSize);
+    int res = recvfrom(data_sock, data->get_file_slice(), MAX_PACKET_DATA_BYTE_LENGTH, 0, (struct sockaddr*)&serv_addr, &nSize);
+	send_ack(99);
 	data->set_slice_len(res);
     return res != -1;
 }
@@ -186,10 +190,9 @@ int Server::get_file_data(char* src, char* dest, int maxlen)
 
 bool Server::send_ack(int num)
 {
-	int packet_serial_number = num;//get packet serial number
 	char ack[4];
 	printf("packet %d get\n", num);
-	sprintf(ack, "%d", packet_serial_number);
+	sprintf(ack, "%d", num);
 	int res = sendto(cmd_sock, ack, strlen(ack), 0, (struct sockaddr*) & serv_addr, sizeof(serv_addr));
 	return res != -1;
 }
@@ -290,12 +293,13 @@ void Server::parse_param(char* src, char* path, int* slice_num, char* data, int 
 	for(di = 0; di < *data_len; ++di)
 		data[di] = src[si + di];
 }
+
 int Server::set_dir(char* path)
 {
 	int len = strlen(path);
 	char* tmpDirPath = new char[100];
 	memset(tmpDirPath, 0, 100);
-#ifdef _WIN32
+	#ifdef _WIN32
 	for (int i = 0; i < len; i++)
 	{
 		tmpDirPath[i] = path[i];
@@ -308,8 +312,8 @@ int Server::set_dir(char* path)
 			}
 		}
 	}
-#endif
-#ifdef __linux__
+	#endif
+	#ifdef __linux__
 	for (int i = 0; i < len; i++)
 	{
 		tmpDirPath[i] = path[i];
@@ -322,22 +326,23 @@ int Server::set_dir(char* path)
 			}
 		}
 	}
-#endif
+	#endif
 	return 0;//Create success
 }
+
 bool Server::parse_path()
 {
 	char* address = new char[256];
 	char* r_cmd = new char[4];
 	memset(r_cmd, 0, 4);
 	memset(address, 0, 256);
-#ifdef __linux__
+	#ifdef __linux__
 	socklen_t nSize = sizeof(sockaddr);
-#endif
-#ifdef WIN32
+	#endif
+	#ifdef WIN32
 	int nSize = sizeof(sockaddr);
 #endif
-	int res = recvfrom(cmd_sock, address, sizeof(address), 0, (struct sockaddr*) & serv_addr, &nSize);
+	int res = recvfrom(data_sock, address, sizeof(address), 0, (struct sockaddr*) & serv_addr, &nSize);
 	sprintf(r_cmd, "%s", "INFO");
 	res = sendto(cmd_sock, r_cmd, 4, 0, (struct sockaddr*) & serv_addr, sizeof(serv_addr));
 	set_dir(address);
@@ -349,13 +354,13 @@ bool Server::parse_cmd()
 	char* cmd = new char[256];
 	memset(cmd, 0, 256);
 
-#ifdef __linux__
+	#ifdef __linux__
 	socklen_t nSize = sizeof(sockaddr);
-#endif
+	#endif
 
-#ifdef WIN32
+	#ifdef WIN32
 	int nSize = sizeof(sockaddr);
-#endif
+	#endif
 
 	recvfrom(cmd_sock, cmd, 256 * sizeof(char), 0, (struct sockaddr*) & serv_addr, &nSize);
 
@@ -363,7 +368,6 @@ bool Server::parse_cmd()
 	{
 		parse_path();
 	}
-
 	else if (cmd[0] == 'S' && cmd[1] == 'E' && cmd[2] == 'N' && cmd[3] == 'D')
 	{
 		int i = 5;
@@ -382,22 +386,16 @@ bool Server::parse_cmd()
 		while(i < strlen(cmd) && cmd[i] != ' ')
 			file_len *= 10, file_len += cmd[i++] - '0';
 
-		if(!check_file(file_name, file_len)) 
+		if(!check_file(file_name, file_len, tot_pkt_num)) 
 		{
 			write_logfile(file_name, tot_pkt_num);
 			write_logfile(file_name, file_len);
 		}
-		puts("here");
 	}
-	else if (cmd[0] == 'P' && cmd[1] == 'O' && cmd[2] == 'R' && cmd[3] == 'T' && cmd[4] == ' ')
+	else if (cmd[0] == 'P' && cmd[1] == 'O' && cmd[2] == 'R' && cmd[3] == 'T')
 	{
-		int port = 0;
-		for (int i = 5; i < strlen(cmd); i++)
-		{
-			port *= 10;
-			port += (cmd[i] - '0');
-		}
-		check_port(port);
+		check_port();
+		recv_whole_file();
 	}
 	else
 	{
@@ -407,17 +405,17 @@ bool Server::parse_cmd()
 }
 
 
-bool Server::write_logfile(char* path, int number) 
+bool Server::write_logfile(char* path, int number) // to be finished
 {
-	char logfile_path[50];
+	/*char logfile_path[50];
 	sprintf(logfile_path, "%s.FTlog", path);
 	FILE* logfile = fopen(logfile_path, "ab");
 	fwrite(&number, 4, 1, logfile);
 	fclose(logfile);
-	return true;
+	return true;*/
 }
 
-bool Server::check_file(char* file_name, int file_length) 
+bool Server::check_file(char* file_name, int file_len, int pkt_num) 
 {
 	char logfile_path[50];
 	sprintf(logfile_path, "%s.FTlog", file_name);
@@ -427,46 +425,52 @@ bool Server::check_file(char* file_name, int file_length)
 	{
 		int total_packet_num = 0;
 		int log_file_length = 0;
+
 		fread(&total_packet_num, 4, 1, logfile);
 		fread(&log_file_length, 4, 1, logfile);
-		if (log_file_length == file_length) 
+		
+		if (log_file_length == file_len) 
 		{
-			printf("%d, %d\n", log_file_length, file_length);
-			bool* loaded_pack_num = new bool[total_packet_num + 1];
-			for (int i = 1; i <= total_packet_num; i++)loaded_pack_num[i] = false;
-			int total_loaded_pack_num = 1;
+			bool* loaded_pack_num = new bool[total_packet_num];
+			for (int i = 0; i < total_packet_num; i++)
+				loaded_pack_num[i] = false;
+				
+			int total_loaded_pack_num = 0;
 			int temp = 0;
-			for (; !feof(logfile); total_loaded_pack_num++) {
+			for (; !feof(logfile); total_loaded_pack_num++) 
+			{
 				fread(&temp, 4, 1, logfile);
-				if (loaded_pack_num[temp] == true)total_loaded_pack_num--;
+				//if(loaded_pack_num[temp] == true) total_loaded_pack_num--;
 				loaded_pack_num[temp] = true;
 			}
-			total_loaded_pack_num--;
-			void* need_send = malloc(sizeof(int) * (total_packet_num - total_loaded_pack_num + 1));
-			((int*)need_send)[0] = total_packet_num - total_loaded_pack_num;
-			for (int i = 1, j = 1; i <= total_packet_num; i++) 
+			
+			int need_send = total_packet_num - total_loaded_pack_num;
+			int need_send_num[need_send];
+			printf("need: %d\n", need_send);
+			for (int i = 0, j = 0; i < total_packet_num; i++) 
 			{
 				if (loaded_pack_num[i] == false) 
 				{
-					((int*)need_send)[j] = i;
+					printf("%d ", i + 1);
+					need_send_num[j] = i;
 					j++;
 				}
 			}
-			//for(int i=0;i<sizeof(int)*(*total_packet_num-total_loaded_pack_num+1);i++)
-			  //  cout<<(int)(((char *)need_send)[i])<<endl;
+			
 			char offset[256];
-
+			sprintf(offset, "OFFS %d", need_send);
+			for(int i = 0; i < need_send; ++i)
+				sprintf(offset, "%s %d", offset, need_send_num[i]);
+			puts(offset);
 			sendto(cmd_sock, (char *)need_send, sizeof(int) * (total_packet_num-total_loaded_pack_num+1), 0,(struct sockaddr*) & serv_addr, sizeof(serv_addr));
 			fclose(logfile);
 			return true;
 		}
 	}
 
-	//void* need_send = new int;
-	//((int*)need_send)[0] = 0;
 	char offset[256];
-	sprintf(offset, "OFFS %d", 0);
-	sendto(cmd_sock, offset, 6, 0,(struct sockaddr*) & serv_addr, sizeof(serv_addr));
+	sprintf(offset, "OFFS %d", pkt_num);
+	sendto(cmd_sock, offset, strlen(offset), 0,(struct sockaddr*) & serv_addr, sizeof(serv_addr));
 	remove(logfile_path);
 	return false;
 }

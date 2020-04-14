@@ -7,6 +7,7 @@ private:
 	pkt_load* data;
 	sockaddr_in serv_addr;
 	sockaddr_in serv_addr2;
+	int cmd_port;
 	//shore the received data for a short time
 	char* buffer = nullptr;
 #ifdef _WIN32
@@ -19,14 +20,14 @@ private:
 #endif
 public:
 	//constructor
-	Server();
+	Server(int port);
 	//destruuctor
 	~Server();
 	
 	//set up listen on specified port
 	//parse data and store in file_slice
 	//return status
-	bool set_listen(int port);
+	bool set_listen();
 
 		
     //start listen,reveive packet to file_slice
@@ -61,7 +62,7 @@ public:
 
 	//find a usable  port
 	//return port number
-	int check_port(int cmd_port);
+	int check_port();
 
 	//read in path information and return info and use function set_dir(char* path)
 	bool parse_path();
@@ -77,5 +78,5 @@ public:
 	bool write_logfile(char* path, int number);
 
 	//check whether a file need to re-upload
-	bool check_file(char* file_name, int file_length);
+	bool check_file(char* file_name, int file_len, int pkt_num);
 };
