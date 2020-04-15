@@ -12,7 +12,8 @@ private:
     int slice_len = -1;
 public:
     //constructor
-    File(char * input_file, int pkt_len, int offset);
+    File(char* input_file, int pkt_len, int offset);
+    File(char* input_file, int pkt_num);
 
     //deconstructor
     ~File();
@@ -31,4 +32,6 @@ public:
     void cal_slice_len(int pkt_len);
     int get_slice_len();
     int get_base_offset();
+    void get_send_rec();
+    int  get_tot_num();
 };

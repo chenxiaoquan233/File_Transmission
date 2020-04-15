@@ -3,6 +3,15 @@
 #include <string.h>
 #include "../include/file.h"
 
+File::File(char* input_file, int _pkt_num)
+{
+    file_path = input_file;
+    pkt_num = _pkt_num;
+    send_rec = new bool[_pkt_num];
+    printf("pkt_num: %d\n", _pkt_num);
+    memset(send_rec, 0, _pkt_num * sizeof(bool));
+}
+
 File::File(char* input_file, int pkt_len, int offset)
 {
     file_path = input_file;
@@ -18,6 +27,11 @@ File::File(char* input_file, int pkt_len, int offset)
 }
 
 File::~File(){}
+
+int File::get_tot_num()
+{
+    return pkt_num;
+}
 
 int File::get_pkt_num()
 {
@@ -91,4 +105,11 @@ int File::get_slice_len()
 int File::get_base_offset()
 {
     return base_offset;
+}
+
+void File::get_send_rec()
+{
+    for(int i=0;i<pkt_num;++i)
+        printf("%d ", send_rec[i]);
+    puts("");
 }

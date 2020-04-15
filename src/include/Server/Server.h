@@ -1,4 +1,5 @@
 #include "../base.h"
+#include "../file.h"
 #include "../packet_load.h"
 
 class Server : public base
@@ -8,6 +9,7 @@ private:
 	sockaddr_in serv_addr_cmd;
 	sockaddr_in serv_addr_data;
 	int cmd_port;
+	File* file;
 	//shore the received data for a short time
 	char* buffer = nullptr;
 #ifdef _WIN32

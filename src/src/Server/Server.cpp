@@ -113,7 +113,9 @@ bool Server::recv_whole_file()
 	int file_length = 0; // count the received file length
 	int total_length; // the whole length of the received file
 
-	while(1)
+	file->get_send_rec();
+
+	while(!(file->eof()))
 	{
 		int slice_num = 0;
 		char file_path[50];
@@ -124,6 +126,7 @@ bool Server::recv_whole_file()
 		{
 			parse_param(data->get_file_slice(), file_path, &slice_num, file_slice, data->get_slice_len(), &data_len);
 			send_ack(slice_num);
+			file->pkt_send(slice_num - 1);
 			char file_name[100];
 			printf("%s,%d,%d\n", file_path, slice_num, data->get_slice_len());
 			write_logfile(file_path,slice_num);
@@ -133,39 +136,11 @@ bool Server::recv_whole_file()
 			fclose(output_file_slice);
 			//write_file(output_file_slice, file_slice, data_len);
 		}
-
 		delete file_slice;
 	}
 
-	/*while (1)
-	{
-		while (1)//receive the next file slice
-			if (recv_packet()) break;
-		*/
+	puts("tot file transmission finished");
 
-
-		//int pkt_num = return_packet_serial_number();
-		//send_ack(pkt_num);//send the ack to client
-		
-		/*update information of file and create new buffer*/
-		/*if (!output_file)//head of file
-		{
-			read_FILEinformation(output_file, data->get_file_slice(), total_length);
-			buffer = new char(total_length + 1);
-		}*/
-
-		/*read this slice into buffer and update file_length*/
-		//file_length += get_file_data(data->get_file_slice(), buffer + file_length, total_length - file_length);
-
-
-		/*already received the whole file*/
-		/*if (file_length == total_length)
-		{
-			break;
-		}
-	}*/
-	//puts(buffer);
-	//write_file(output_file, buffer, total_length);
 	return true;
 }
 
@@ -385,6 +360,7 @@ bool Server::parse_cmd()
 		while(i < strlen(cmd) && cmd[i] != ' ')
 			file_len *= 10, file_len += cmd[i++] - '0';
 
+		file = new File(file_name, tot_pkt_num);
 		if(!check_file(file_name, file_len, tot_pkt_num)) 
 		{
 			write_logfile(file_name, tot_pkt_num);

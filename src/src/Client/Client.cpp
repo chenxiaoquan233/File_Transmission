@@ -26,7 +26,7 @@ int Client::send_file(char* input_file_name)
         return -1;
     }
 
-    sprintf(cmd, "SEND %s %d %d", input_file_name, file->get_pkt_num(), file->get_file_len());
+    sprintf(cmd, "SEND %s %d %d", input_file_name, file->get_tot_num(), file->get_file_len());
     send_cmd(cmd);
     int offs = -1;
     while (offs == -1) offs = get_offset();
