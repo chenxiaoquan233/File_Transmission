@@ -74,6 +74,9 @@ public:
 	
 	bool send_path_info(char* buffer);
 
+	//combine file slice
+	bool mergeFile(char* fileaddress, int package);
+
 	#ifdef _WIN32
 	SOCKET* get_cmd_sock();
 	#endif

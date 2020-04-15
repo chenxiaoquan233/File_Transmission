@@ -379,6 +379,35 @@ bool Client::send_path_info(char* buffer)
     }
 
 }
+bool mergeFile(char* fileaddress, int package)
+{
+    int filelen = strlen(fileaddress);
+
+    char* buffaddress;
+    if ((buffaddress = (char*)malloc(sizeof(char) * (filelen + 5))) == NULL)
+        return 0;
+
+    FILE* dst, * src;
+    if ((dst = fopen(fileaddress, "wb")) == NULL)
+        return 0;
+    for (int i = 1; i <= package; i++)
+    {
+        sprintf(buffaddress, "%s.%03d", fileaddress, i);
+        if ((src = fopen(buffaddress, "rb")) == NULL)
+            return 0;
+        char sub;
+        while (!feof(src))
+        {
+            sub = fgetc(src);
+            if (!feof(src))fputc(sub, dst);
+        }
+        fclose(src);
+        remove(buffaddress);
+    }
+    fclose(dst);
+    return 1;
+}
+
 
 #ifdef _WIN32
 SOCKET* Client::get_cmd_sock()
