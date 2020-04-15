@@ -92,8 +92,3 @@ int File::get_base_offset()
 {
     return base_offset;
 }
-
-void File::confirm_send(int index)
-{
-    send_rec[index] = true;
-}

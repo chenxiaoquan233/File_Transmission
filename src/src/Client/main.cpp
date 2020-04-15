@@ -85,7 +85,7 @@ int main(int argc, char** argv)
     {
         dir_flag = parse_arg(argc, argv, &file_path, &ip_addr, &port);
         Client* client = new Client(ip_addr);
-        client->sock_init(client->get_cmd_sock(), port);
+        client->sock_init(client->get_cmd_sock(), port, 1);
         if(dir_flag)
         {
             char* test[100];

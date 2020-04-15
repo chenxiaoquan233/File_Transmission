@@ -31,5 +31,4 @@ public:
     void cal_slice_len(int pkt_len);
     int get_slice_len();
     int get_base_offset();
-    void confirm_send(int index);
 };

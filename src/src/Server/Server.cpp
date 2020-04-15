@@ -20,10 +20,10 @@ bool Server::set_listen()
 	#ifdef __linux__
     cmd_sock = socket(AF_INET, SOCK_DGRAM, 0);
 	#endif
-    memset(&serv_addr, 0, sizeof(serv_addr));
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr.s_addr = INADDR_ANY;
-    serv_addr.sin_port = htons(cmd_port);
+    memset(&serv_addr_cmd, 0, sizeof(serv_addr_cmd));
+    serv_addr_cmd.sin_family = AF_INET;
+    serv_addr_cmd.sin_addr.s_addr = INADDR_ANY;
+    serv_addr_cmd.sin_port = htons(cmd_port);
     int on = 1;
 
 	#ifdef WIN32
@@ -36,7 +36,7 @@ bool Server::set_listen()
 		perror("reuse");
 		return false;
 	}
-    if(bind(cmd_sock, (struct sockaddr*)&serv_addr, sizeof(sockaddr)) == -1)
+    if(bind(cmd_sock, (struct sockaddr*)&serv_addr_cmd, sizeof(sockaddr)) == -1)
 	{
 		perror("bind");
 		return false;
@@ -53,12 +53,12 @@ int Server::check_port()
 	#ifdef __linux__
 	data_sock = socket(AF_INET, SOCK_DGRAM, 0);
 	#endif
-	memset(&serv_addr2, 0, sizeof(serv_addr2));
-	serv_addr2.sin_family = AF_INET;
-	serv_addr2.sin_addr.s_addr = htonl(INADDR_ANY);
-	serv_addr2.sin_port = htons(start_port);
+	memset(&serv_addr_data, 0, sizeof(serv_addr_data));
+	serv_addr_data.sin_family = AF_INET;
+	serv_addr_data.sin_addr.s_addr = htonl(INADDR_ANY);
+	serv_addr_data.sin_port = htons(start_port);
 	#ifdef _WIN32
-	bind(data_sock, (LPSOCKADDR)&serv_addr2, sizeof(serv_addr2));
+	bind(data_sock, (LPSOCKADDR)&serv_addr_data, sizeof(serv_addr_data));
 	while (WSAGetLastError() == WSAEADDRINUSE)
 	{
 		//�˿��ѱ�ռ��
@@ -68,22 +68,22 @@ int Server::check_port()
 		serv_addr2.sin_family = AF_INET;
 		serv_addr2.sin_addr.s_addr = htonl(INADDR_ANY);
 		serv_addr2.sin_port = htons(start_port);
-		bind(data_sock, (LPSOCKADDR)&serv_addr2, sizeof(serv_addr2));
+		bind(data_sock, (LPSOCKADDR)&serv_addr_data, sizeof(serv_addr_data));
 	}
 	#endif
 	#ifdef __linux__
-	while (bind(data_sock, (struct sockaddr*) & serv_addr2, sizeof(sockaddr)) == -1)
+	while (bind(data_sock, (struct sockaddr*) & serv_addr_data, sizeof(sockaddr)) == -1)
 	{
 		start_port++;
-		memset(&serv_addr2, 0, sizeof(serv_addr2));
-		serv_addr2.sin_family = AF_INET;
-		serv_addr2.sin_addr.s_addr = htonl(INADDR_ANY);
-		serv_addr2.sin_port = htons(start_port);
+		memset(&serv_addr_data, 0, sizeof(serv_addr_data));
+		serv_addr_data.sin_family = AF_INET;
+		serv_addr_data.sin_addr.s_addr = htonl(INADDR_ANY);
+		serv_addr_data.sin_port = htons(start_port);
 	}
 	#endif
 	char answer_port[10];
 	sprintf(answer_port, "PORT %d", start_port);
-	sendto(cmd_sock, answer_port, strlen(answer_port), 0, (struct sockaddr*) & serv_addr, sizeof(serv_addr));
+	sendto(cmd_sock, answer_port, strlen(answer_port), 0, (struct sockaddr*) & serv_addr_cmd, sizeof(serv_addr_cmd));
 	return start_port;
 }
 
@@ -100,8 +100,7 @@ bool Server::recv_packet()
 	#endif
 
     data->create_file_slice(MAX_PACKET_DATA_BYTE_LENGTH);
-    int res = recvfrom(data_sock, data->get_file_slice(), MAX_PACKET_DATA_BYTE_LENGTH, 0, (struct sockaddr*)&serv_addr, &nSize);
-	send_ack(99);
+    int res = recvfrom(data_sock, data->get_file_slice(), MAX_PACKET_DATA_BYTE_LENGTH, 0, (struct sockaddr*)&serv_addr_data, &nSize);
 	data->set_slice_len(res);
     return res != -1;
 }
@@ -193,7 +192,7 @@ bool Server::send_ack(int num)
 	char ack[4];
 	printf("packet %d get\n", num);
 	sprintf(ack, "%d", num);
-	int res = sendto(cmd_sock, ack, strlen(ack), 0, (struct sockaddr*) & serv_addr, sizeof(serv_addr));
+	int res = sendto(cmd_sock, ack, strlen(ack), 0, (struct sockaddr*) & serv_addr_cmd, sizeof(serv_addr_cmd));
 	return res != -1;
 }
 
@@ -341,10 +340,10 @@ bool Server::parse_path()
 	#endif
 	#ifdef WIN32
 	int nSize = sizeof(sockaddr);
-#endif
-	int res = recvfrom(data_sock, address, sizeof(address), 0, (struct sockaddr*) & serv_addr, &nSize);
+	#endif
+	int res = recvfrom(data_sock, address, sizeof(address), 0, (struct sockaddr*) & serv_addr_data, &nSize);
 	sprintf(r_cmd, "%s", "INFO");
-	res = sendto(cmd_sock, r_cmd, 4, 0, (struct sockaddr*) & serv_addr, sizeof(serv_addr));
+	res = sendto(cmd_sock, r_cmd, 4, 0, (struct sockaddr*) & serv_addr_cmd, sizeof(serv_addr_cmd));
 	set_dir(address);
 	return res != -1;
 }
@@ -362,7 +361,7 @@ bool Server::parse_cmd()
 	int nSize = sizeof(sockaddr);
 	#endif
 
-	recvfrom(cmd_sock, cmd, 256 * sizeof(char), 0, (struct sockaddr*) & serv_addr, &nSize);
+	recvfrom(cmd_sock, cmd, 256 * sizeof(char), 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
 
 	if (cmd[0] == 'I' && cmd[1] == 'N' && cmd[2] == 'F' && cmd[3] == 'O')
 	{
@@ -462,7 +461,7 @@ bool Server::check_file(char* file_name, int file_len, int pkt_num)
 			for(int i = 0; i < need_send; ++i)
 				sprintf(offset, "%s %d", offset, need_send_num[i]);
 			puts(offset);
-			sendto(cmd_sock, (char *)need_send, sizeof(int) * (total_packet_num-total_loaded_pack_num+1), 0,(struct sockaddr*) & serv_addr, sizeof(serv_addr));
+			sendto(cmd_sock, (char *)need_send, sizeof(int) * (total_packet_num-total_loaded_pack_num+1), 0,(struct sockaddr*) & serv_addr_cmd, sizeof(serv_addr_cmd));
 			fclose(logfile);
 			return true;
 		}
@@ -470,7 +469,7 @@ bool Server::check_file(char* file_name, int file_len, int pkt_num)
 
 	char offset[256];
 	sprintf(offset, "OFFS %d", pkt_num);
-	sendto(cmd_sock, offset, strlen(offset), 0,(struct sockaddr*) & serv_addr, sizeof(serv_addr));
+	sendto(cmd_sock, offset, strlen(offset), 0,(struct sockaddr*) & serv_addr_cmd, sizeof(serv_addr_cmd));
 	remove(logfile_path);
 	return false;
 }

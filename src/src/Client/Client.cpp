@@ -13,7 +13,7 @@ Client::~Client()
 void Client::send_cmd(char* cmd)
 {
     puts(cmd);
-    int res = sendto(cmd_sock, cmd, strlen(cmd), 0, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
+    int res = sendto(cmd_sock, cmd, strlen(cmd), 0, (struct sockaddr*)&serv_addr_cmd, sizeof(serv_addr_cmd));
 }
 
 
@@ -42,14 +42,14 @@ int Client::send_file(char* input_file_name)
     #ifdef __linux__
     data_sock = new int;
     #endif
-    sock_init(data_sock, port);
+    sock_init(data_sock, port, 0);
 
     while (!file->eof())
     {
         read_file_slice(input_file_name);
         int slice_len = data->get_slice_len();
         bool res = send_packet(slice_len);
-        if(res && get_ack()) file->confirm_send(data->get_slice_num());
+        if(res && get_ack()) file->pkt_send(data->get_slice_num() - 1);
     }
     /*
     while (!file->eof())
@@ -95,7 +95,7 @@ bool Client::read_file_slice(char* input_file_name)
 bool Client::sock_init(SOCKET* sock, int port)
 #endif
 #ifdef __linux__
-bool Client::sock_init(int* sock, int port)
+bool Client::sock_init(int* sock, int port, int is_cmd)
 #endif
 {
     #ifdef _WIN32
@@ -107,30 +107,49 @@ bool Client::sock_init(int* sock, int port)
     #ifdef __linux__
     *sock = socket(AF_INET, SOCK_DGRAM, 0);
     #endif
-
-    memset(&serv_addr, 0, sizeof(serv_addr));
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr.s_addr = inet_addr(ip_addr);
-    serv_addr.sin_port = htons(port);
-    return set_port(sock, port);
+    if(is_cmd)
+    {
+        memset(&serv_addr_cmd, 0, sizeof(serv_addr_cmd));
+        serv_addr_cmd.sin_family = AF_INET;
+        serv_addr_cmd.sin_addr.s_addr = inet_addr(ip_addr);
+        serv_addr_cmd.sin_port = htons(port);
+    }
+    else
+    {
+        memset(&serv_addr_data, 0, sizeof(serv_addr_data));
+        serv_addr_data.sin_family = AF_INET;
+        serv_addr_data.sin_addr.s_addr = inet_addr(ip_addr);
+        serv_addr_data.sin_port = htons(port);
+    }
+    
+    return set_port(sock, port, is_cmd);
 }
 
 #ifdef _WIN32
 bool Client::set_port(SOCKET* sock, int port)
 #endif
 #ifdef __linux__
-bool Client::set_port(int* sock, int port)
+bool Client::set_port(int* sock, int port, int is_cmd)
 #endif
 {
-    serv_addr.sin_port = htons(port);
-    if (bind(*sock, (struct sockaddr*) & serv_addr, sizeof(sockaddr)) == -1)
-        return false;
+    if(is_cmd)
+    {
+        serv_addr_cmd.sin_port = htons(port);
+        if (bind(*sock, (struct sockaddr*) & serv_addr_cmd, sizeof(sockaddr)) == -1)
+            return false;
+    }
+    else
+    {
+        serv_addr_data.sin_port = htons(port);
+        if (bind(*sock, (struct sockaddr*) & serv_addr_data, sizeof(sockaddr)) == -1)
+            return false;
+    }
     return true;
 }
 
 bool Client::send_packet(int len)
 {
-    int res=sendto(*data_sock, data->get_file_slice(), len + UPD_HEADER_LENGTH, 0, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
+    int res=sendto(*data_sock, data->get_file_slice(), len + UPD_HEADER_LENGTH, 0, (struct sockaddr*)&serv_addr_data, sizeof(serv_addr_data));
     if(res == -1)
     {
         perror("send");
@@ -160,7 +179,7 @@ int Client::get_offset()
     #ifdef WIN32
     int nSize = sizeof(sockaddr);
     #endif
-    recvfrom(cmd_sock, buffer, 12, 0, (struct sockaddr*) & serv_addr, &nSize);
+    recvfrom(cmd_sock, buffer, 12, 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
 
     if (buffer[0] != 'O' || buffer[1] != 'F' || buffer[2] != 'F' || buffer[3] != 'S')return -1;
     int value = 0;
@@ -190,13 +209,14 @@ int Client::get_port()
     #ifdef WIN32
     int nSize = sizeof(sockaddr);
     #endif
-    recvfrom(cmd_sock, buffer, 12, 0, (struct sockaddr*) & serv_addr, &nSize);
+    recvfrom(cmd_sock, buffer, 12, 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
 
     if (buffer[0] != 'P' || buffer[1] != 'O' || buffer[2] != 'R' || buffer[3] != 'T')return -1;
     int value = 0;
     int tot = 4;
     while (tot < 12 && !isdigit(buffer[tot]))++tot;
     while (tot < 12 && isdigit(buffer[tot])) { value *= 10; value += buffer[tot] - '0'; ++tot; }
+    printf("port: %d\n", value);
     return value;
 }
 
@@ -224,9 +244,9 @@ bool Client::get_ack()
     #ifdef WIN32
 	int nSize = sizeof(sockaddr);
     #endif
-    while(recvfrom(cmd_sock, num_buffer, 4, 0, (struct sockaddr*)&serv_addr, &nSize) == -1);
+    while(recvfrom(cmd_sock, num_buffer, 4, 0, (struct sockaddr*)&serv_addr_cmd, &nSize) == -1);
 
-    printf("ACK: %d\n", atoi(num_buffer));
+    printf("ACK: %d,slice_num: %d\n", atoi(num_buffer), data->get_slice_num());
     return atoi(num_buffer) == data->get_slice_num();
 }
 
@@ -320,7 +340,7 @@ bool Client::send_path_info(char* buffer)
     send_cmd(info);
     int port = -1;
     while (port == -1)port = get_port();
-    set_port(data_sock, port);
+    set_port(data_sock, port, 0);
     if (strlen(buffer) > MAX_PACKET_DATA_BYTE_LENGTH)
     {
         for (int i = 0; i < strlen(buffer) / MAX_PACKET_DATA_BYTE_LENGTH + 1; i++)
@@ -332,7 +352,7 @@ bool Client::send_path_info(char* buffer)
             }
             for(int k=0;k< SEND_FREQ;k++)
             {
-                int res = sendto(cmd_sock, paths, strlen(paths) + UPD_HEADER_LENGTH, 0, (struct sockaddr*) & serv_addr, sizeof(serv_addr));
+                int res = sendto(cmd_sock, paths, strlen(paths) + UPD_HEADER_LENGTH, 0, (struct sockaddr*) & serv_addr_cmd, sizeof(serv_addr_cmd));
                 //UNCOMPLETED!!!Need to determine whether the return is "info"
                 if (res != -1)
                 {
@@ -347,7 +367,7 @@ bool Client::send_path_info(char* buffer)
     {
         for (int k = 0; k < SEND_FREQ; k++)
         {
-            int res = sendto(cmd_sock, buffer, strlen(buffer) + UPD_HEADER_LENGTH, 0, (struct sockaddr*) & serv_addr, sizeof(serv_addr));
+            int res = sendto(cmd_sock, buffer, strlen(buffer) + UPD_HEADER_LENGTH, 0, (struct sockaddr*) & serv_addr_cmd, sizeof(serv_addr_cmd));
             //UNCOMPLETED!!!Need to determine whether the return is "info"
             if (res != -1)
             {

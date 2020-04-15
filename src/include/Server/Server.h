@@ -5,8 +5,8 @@ class Server : public base
 {
 private:
 	pkt_load* data;
-	sockaddr_in serv_addr;
-	sockaddr_in serv_addr2;
+	sockaddr_in serv_addr_cmd;
+	sockaddr_in serv_addr_data;
 	int cmd_port;
 	//shore the received data for a short time
 	char* buffer = nullptr;

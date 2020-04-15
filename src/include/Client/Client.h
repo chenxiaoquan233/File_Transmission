@@ -9,7 +9,8 @@ class Client : public base
 private:
 	File* file;
 	pkt_load* data = nullptr;
-	sockaddr_in serv_addr;
+	sockaddr_in serv_addr_cmd;
+	sockaddr_in serv_addr_data;
 	char* ip_addr;
 #ifdef _WIN32
 	SOCKET cmd_sock;
@@ -43,7 +44,7 @@ public:
 	bool sock_init(SOCKET* sock, const char* ip_addr, int port);
 	#endif
 	#ifdef __linux__
-	bool sock_init(int* sock, int port);
+	bool sock_init(int* sock, int port, int is_cmd);
 	#endif
 
 	//change port id
@@ -52,7 +53,7 @@ public:
 	bool set_port(SOCKET* sock, int port);
 	#endif
 	#ifdef __linux__
-	bool set_port(int* sock, int port);
+	bool set_port(int* sock, int port, int is_cmd);
 	#endif
 	
 	//send packet on connection
