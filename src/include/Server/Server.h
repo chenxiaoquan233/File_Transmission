@@ -77,8 +77,13 @@ public:
 
 	//when receive a info,first use it to write total packet number,then write file leghth
 	//when receive a packet,use it write packet No.
-	bool write_logfile(char* path, int number);
+	bool write_logfile(char* path, int number, int size);
 
 	//check whether a file need to re-upload
 	bool check_file(char* file_name, int file_len, int pkt_num);
+
+	//combine file slice
+	bool mergeFile(char* file_name, int pkt_num);
+
+	int get_ack(char* data);
 };

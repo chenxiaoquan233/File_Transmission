@@ -88,14 +88,20 @@ int main(int argc, char** argv)
         client->sock_init(client->get_cmd_sock(), port, 1);
         if(dir_flag)
         {
-            char* test[100];
+            char* file_info[100];
             for (int i = 0; i < 100; i++)
             {
-                puts("here");
-                test[i] = new char[1000];
-                memset(test[i], 0, 1000);
+                file_info[i] = new char[1000];
+                memset(file_info[i], 0, 1000);
             }
-            int folder_number=client->read_path(file_path, test);
+            char* path_info = new char[10000];
+            int file_number=client->read_path(file_path, path_info, file_info);
+            printf("files: %d\n",file_number);
+            for(int i = 0; i < file_number; ++i)
+            {
+                puts(file_info[i]);
+            }
+            client->send_path_info(path_info);
         }
         else
         {
@@ -106,13 +112,6 @@ int main(int argc, char** argv)
     {
         // call GUI
     }
-    
-    
-    /*
-    for (int i=0; i <= folder_number; i++)
-    {
-        std::cout << test[i];
-    }
-    */
+
     return 0;
 }

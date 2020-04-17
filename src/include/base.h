@@ -8,6 +8,7 @@
 
 // COMMON INCLUDE
 #include <math.h>
+#include <time.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -34,8 +35,11 @@
 //set common prefixes here
 class base
 {
-	protected:
-		const int MAX_PACKET_DATA_BYTE_LENGTH = 528;//adviced length
-		const int UPD_HEADER_LENGTH = 19;
-		const int SEND_FREQ = 10;
+protected:
+	const int MAX_UDP_PACKET_LEN = 1050;
+	const int MAX_PACKET_DATA_BYTE_LENGTH = 20 * 1024 * 1024;
+	const int UPD_HEADER_LENGTH = 19;
+	const int SEND_FREQ = 10;
+public:
+	inline int min(int a, int b) {return a > b ? b : a;}
 };

@@ -8,7 +8,6 @@ File::File(char* input_file, int _pkt_num)
     file_path = input_file;
     pkt_num = _pkt_num;
     send_rec = new bool[_pkt_num];
-    printf("pkt_num: %d\n", _pkt_num);
     memset(send_rec, 0, _pkt_num * sizeof(bool));
 }
 

@@ -37,9 +37,9 @@ int main(int argc, char** argv)
 {
     parse_arg(argc, argv);
     Server* server = new Server(atoi(argv[3]));
-    if(server->set_listen())
-        while(1)
-        {
-            server->parse_cmd();
-        }
+	if(server->set_listen())
+	while(1)
+	{
+		server->parse_cmd();
+	}
 }

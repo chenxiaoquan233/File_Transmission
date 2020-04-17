@@ -24,6 +24,7 @@ bool Server::set_listen()
     serv_addr_cmd.sin_family = AF_INET;
     serv_addr_cmd.sin_addr.s_addr = INADDR_ANY;
     serv_addr_cmd.sin_port = htons(cmd_port);
+	
     int on = 1;
 
 	#ifdef WIN32
@@ -65,9 +66,9 @@ int Server::check_port()
 		//printf("ռ��");
 		start_port++;
 		memset(&serv_addr2, 0, sizeof(serv_addr2));
-		serv_addr2.sin_family = AF_INET;
-		serv_addr2.sin_addr.s_addr = htonl(INADDR_ANY);
-		serv_addr2.sin_port = htons(start_port);
+		serv_addr_data.sin_family = AF_INET;
+		serv_addr_data.sin_addr.s_addr = htonl(INADDR_ANY);
+		serv_addr_data.sin_port = htons(start_port);
 		bind(data_sock, (LPSOCKADDR)&serv_addr_data, sizeof(serv_addr_data));
 	}
 	#endif
@@ -99,47 +100,80 @@ bool Server::recv_packet()
 	int nSize = sizeof(sockaddr);
 	#endif
 
+
     data->create_file_slice(MAX_PACKET_DATA_BYTE_LENGTH);
-    int res = recvfrom(data_sock, data->get_file_slice(), MAX_PACKET_DATA_BYTE_LENGTH, 0, (struct sockaddr*)&serv_addr_data, &nSize);
-	data->set_slice_len(res);
-    return res != -1;
+	int already_recv = 0;
+	int pkt_num = 0;
+	
+	while(already_recv < MAX_PACKET_DATA_BYTE_LENGTH)
+	{
+		
+		int res = recvfrom(data_sock, data->get_file_slice() + already_recv, MAX_PACKET_DATA_BYTE_LENGTH, 0, (struct sockaddr*)&serv_addr_data, &nSize);
+		//puts(data->get_file_slice());
+		if(!already_recv)
+		{
+			pkt_num = get_ack(data->get_file_slice());
+		}
+		already_recv += res;
+		send_ack(pkt_num);
+		if(res < MAX_UDP_PACKET_LEN) break;// the last packet may not meet the max size
+	}
+	//printf("%d\n",already_recv);
+	data->set_slice_len(already_recv);
+	//puts(data->get_file_slice());
+    return 1;
 }
 
 bool Server::recv_whole_file()
 {
+	clock_t start_t, end_t;
+	start_t = clock();
 	//if(output_file) output_file = nullptr;//clear the output_file
 	if(buffer) delete(buffer);//clear the buffer
 
-	int file_length = 0; // count the received file length
+	//long long file_length = 0; // count the received file length
 	int total_length; // the whole length of the received file
 
-	file->get_send_rec();
+	int slice_num = 0;
+	char file_path[50];
+	char* file_slice;
+	int data_len = 0;
 
 	while(!(file->eof()))
 	{
-		int slice_num = 0;
-		char file_path[50];
-		char* file_slice = new char[MAX_PACKET_DATA_BYTE_LENGTH];
-		int data_len = 0;
+		slice_num = 0;
+		data_len = 0;
+		memset(file_path, 0, sizeof(file_path));
+		file_slice = new char[MAX_PACKET_DATA_BYTE_LENGTH];
 
 		if (recv_packet())
 		{
+			// parse packet format
 			parse_param(data->get_file_slice(), file_path, &slice_num, file_slice, data->get_slice_len(), &data_len);
-			send_ack(slice_num);
+
+			// record as recieved
 			file->pkt_send(slice_num - 1);
+
+			// record on log
+			write_logfile(file_path, (short)slice_num, sizeof(short));
+
+			// write file slice
 			char file_name[100];
-			printf("%s,%d,%d\n", file_path, slice_num, data->get_slice_len());
-			write_logfile(file_path,slice_num);
 			sprintf(file_name, "%s.%03d", file_path, slice_num);
 			FILE* output_file_slice = fopen(file_name, "wb");
 			fwrite(file_slice, 1, data_len, output_file_slice);
 			fclose(output_file_slice);
-			//write_file(output_file_slice, file_slice, data_len);
 		}
 		delete file_slice;
 	}
 
-	puts("tot file transmission finished");
+	end_t = clock();
+	printf("recv time: %f\n", ((double)(end_t - start_t) / CLOCKS_PER_SEC));
+
+	mergeFile(file_path, slice_num);
+
+	end_t = clock();
+	printf("merg time: %f\n", ((double)(end_t - start_t) / CLOCKS_PER_SEC));
 
 	return true;
 }
@@ -165,7 +199,7 @@ int Server::get_file_data(char* src, char* dest, int maxlen)
 bool Server::send_ack(int num)
 {
 	char ack[4];
-	printf("packet %d get\n", num);
+	//printf("packet %d get\n", num);
 	sprintf(ack, "%d", num);
 	int res = sendto(cmd_sock, ack, strlen(ack), 0, (struct sockaddr*) & serv_addr_cmd, sizeof(serv_addr_cmd));
 	return res != -1;
@@ -337,9 +371,9 @@ bool Server::parse_cmd()
 	#endif
 
 	recvfrom(cmd_sock, cmd, 256 * sizeof(char), 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
-
 	if (cmd[0] == 'I' && cmd[1] == 'N' && cmd[2] == 'F' && cmd[3] == 'O')
 	{
+		check_port();
 		parse_path();
 	}
 	else if (cmd[0] == 'S' && cmd[1] == 'E' && cmd[2] == 'N' && cmd[3] == 'D')
@@ -358,14 +392,16 @@ bool Server::parse_cmd()
 			tot_pkt_num *= 10, tot_pkt_num += cmd[i++] - '0';
 		i++;
 		while(i < strlen(cmd) && cmd[i] != ' ')
+		{
 			file_len *= 10, file_len += cmd[i++] - '0';
-
+		}
 		file = new File(file_name, tot_pkt_num);
 		if(!check_file(file_name, file_len, tot_pkt_num)) 
 		{
-			write_logfile(file_name, tot_pkt_num);
-			write_logfile(file_name, file_len);
+			write_logfile(file_name, (short)tot_pkt_num, sizeof(short));
+			write_logfile(file_name, file_len, sizeof(int));
 		}
+		//puts("here");
 	}
 	else if (cmd[0] == 'P' && cmd[1] == 'O' && cmd[2] == 'R' && cmd[3] == 'T')
 	{
@@ -380,14 +416,14 @@ bool Server::parse_cmd()
 }
 
 
-bool Server::write_logfile(char* path, int number) // to be finished
+bool Server::write_logfile(char* path, int number, int size)
 {
-	/*char logfile_path[50];
+	char logfile_path[50];
 	sprintf(logfile_path, "%s.FTlog", path);
 	FILE* logfile = fopen(logfile_path, "ab");
-	fwrite(&number, 4, 1, logfile);
+	fwrite(&number, size, 1, logfile);
 	fclose(logfile);
-	return true;*/
+	return true;
 }
 
 bool Server::check_file(char* file_name, int file_len, int pkt_num) 
@@ -396,16 +432,18 @@ bool Server::check_file(char* file_name, int file_len, int pkt_num)
 	sprintf(logfile_path, "%s.FTlog", file_name);
 	FILE* logfile;
 	logfile = fopen(logfile_path, "rb");
+	
 	if (logfile) 
 	{
-		int total_packet_num = 0;
+		short total_packet_num = 0;
 		int log_file_length = 0;
 
-		fread(&total_packet_num, 4, 1, logfile);
-		fread(&log_file_length, 4, 1, logfile);
-		
+		fread(&total_packet_num, sizeof(short), 1, logfile);
+		fread(&log_file_length, sizeof(int), 1, logfile);
+
 		if (log_file_length == file_len) 
 		{
+			//printf("%d,%d\n", log_file_length, file_len);
 			bool* loaded_pack_num = new bool[total_packet_num];
 			for (int i = 0; i < total_packet_num; i++)
 				loaded_pack_num[i] = false;
@@ -418,26 +456,23 @@ bool Server::check_file(char* file_name, int file_len, int pkt_num)
 				//if(loaded_pack_num[temp] == true) total_loaded_pack_num--;
 				loaded_pack_num[temp] = true;
 			}
-			
 			int need_send = total_packet_num - total_loaded_pack_num;
 			int need_send_num[need_send];
-			printf("need: %d\n", need_send);
 			for (int i = 0, j = 0; i < total_packet_num; i++) 
 			{
 				if (loaded_pack_num[i] == false) 
 				{
-					printf("%d ", i + 1);
 					need_send_num[j] = i;
 					j++;
 				}
 			}
-			
-			char offset[256];
+
+			char offset[3000];
 			sprintf(offset, "OFFS %d", need_send);
 			for(int i = 0; i < need_send; ++i)
 				sprintf(offset, "%s %d", offset, need_send_num[i]);
-			puts(offset);
-			sendto(cmd_sock, (char *)need_send, sizeof(int) * (total_packet_num-total_loaded_pack_num+1), 0,(struct sockaddr*) & serv_addr_cmd, sizeof(serv_addr_cmd));
+			if(sendto(cmd_sock, offset, strlen(offset), 0,(struct sockaddr*) & serv_addr_cmd, sizeof(serv_addr_cmd))<0)
+				perror("offset");
 			fclose(logfile);
 			return true;
 		}
@@ -448,4 +483,49 @@ bool Server::check_file(char* file_name, int file_len, int pkt_num)
 	sendto(cmd_sock, offset, strlen(offset), 0,(struct sockaddr*) & serv_addr_cmd, sizeof(serv_addr_cmd));
 	remove(logfile_path);
 	return false;
+}
+
+bool Server::mergeFile(char* fileaddress, int package)
+{
+    int filelen = strlen(fileaddress);
+
+    char* buffaddress;
+    if ((buffaddress = (char*)malloc(sizeof(char) * (filelen + 5))) == NULL)
+        return 0;
+
+    FILE* dst, * src;
+    if ((dst = fopen(fileaddress, "wb")) == NULL)
+        return 0;
+    for (int i = 1; i <= package; i++)
+    {
+        sprintf(buffaddress, "%s.%03d", fileaddress, i);
+        if ((src = fopen(buffaddress, "rb")) == NULL)
+            return 0;
+        char sub;
+        while (!feof(src))
+        {
+            sub = fgetc(src);
+            if (!feof(src))fputc(sub, dst);
+        }
+        fclose(src);
+        remove(buffaddress);
+    }
+    fclose(dst);
+    return 1;
+}
+
+int Server::get_ack(char* data)
+{
+	//puts(data);
+	int ack_num = 0;
+	int i = 0;
+	while(data[++i]!='@');
+	++i;
+
+	while(data[i] != '&')
+	{
+		ack_num *= 10;
+		ack_num += data[i++] - '0';
+	}
+	return ack_num;
 }

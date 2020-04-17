@@ -68,14 +68,11 @@ public:
 	//rev port id from server
 	int get_port();
 
-	int read_path(const char* path, char* buffer[]);
+	int read_path(const char* path, char* path_info_buf, char** file_info_buf);
     
 	void send_cmd(char* cmd);
 	
 	bool send_path_info(char* buffer);
-
-	//combine file slice
-	bool mergeFile(char* fileaddress, int package);
 
 	#ifdef _WIN32
 	SOCKET* get_cmd_sock();

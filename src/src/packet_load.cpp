@@ -15,6 +15,7 @@ char* pkt_load::get_file_slice()
 
 bool pkt_load::create_file_slice(int length)
 {
+    if(file_slice) delete file_slice;
     file_slice = new char[length];
     memset(file_slice, 0, length);
     return file_slice!=nullptr;
