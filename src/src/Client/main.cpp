@@ -96,12 +96,11 @@ int main(int argc, char** argv)
             }
             char* path_info = new char[10000];
             int file_number=client->read_path(file_path, path_info, file_info);
-            printf("files: %d\n",file_number);
+            client->send_path_info(path_info);
             for(int i = 0; i < file_number; ++i)
             {
-                puts(file_info[i]);
+                client->send_file(file_info[i]);
             }
-            client->send_path_info(path_info);
         }
         else
         {

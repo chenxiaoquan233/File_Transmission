@@ -13,6 +13,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <iostream>
+#include <pthread.h>
 
 // WINDOWS INCLUDE
 #ifdef _WIN32

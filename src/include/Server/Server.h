@@ -2,6 +2,13 @@
 #include "../file.h"
 #include "../packet_load.h"
 
+struct thread_param
+{
+	char* file_path;
+	int slice_num;
+	thread_param(char* fp, int sn){file_path = fp; slice_num = sn;}
+};
+
 class Server : public base
 {
 private:
@@ -10,6 +17,8 @@ private:
 	sockaddr_in serv_addr_data;
 	int cmd_port;
 	File* file;
+	pthread_t* pid;
+	int thread_num; 
 	//shore the received data for a short time
 	char* buffer = nullptr;
 #ifdef _WIN32
@@ -82,8 +91,8 @@ public:
 	//check whether a file need to re-upload
 	bool check_file(char* file_name, int file_len, int pkt_num);
 
-	//combine file slice
-	bool mergeFile(char* file_name, int pkt_num);
-
 	int get_ack(char* data);
 };
+
+//combine file slice
+void* mergeFile(void* param);

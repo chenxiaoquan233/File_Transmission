@@ -128,18 +128,18 @@ bool Client::set_port(int* sock, int port, int is_cmd)
     if(is_cmd)
     {
         serv_addr_cmd.sin_port = htons(port);
-        if (bind(*sock, (struct sockaddr*) & serv_addr_cmd, sizeof(sockaddr)) == -1)
+        /*if (bind(*sock, (struct sockaddr*) & serv_addr_cmd, sizeof(sockaddr)) == -1)
         {
             return false;
-        }
+        }*/
     }
     else
     {
         serv_addr_data.sin_port = htons(port);
-        if (bind(*sock, (struct sockaddr*) & serv_addr_data, sizeof(sockaddr)) == -1)
+        /*if (bind(*sock, (struct sockaddr*) & serv_addr_data, sizeof(sockaddr)) == -1)
         {
             return false;
-        }
+        }*/
     }
     return true;
 }
@@ -334,9 +334,9 @@ int Client::read_path(const char* path, char* path_info_buf, char** file_info_bu
     pDir = opendir(path);
     while (NULL != (ent = readdir(pDir)))
     {
-        if (ent->d_reclen == 24)
+        if (1 || ent->d_reclen == 24)
         {
-            if (ent->d_type == 8)
+            if (ent->d_type == DT_REG)
             {
                 //for file
                 std::string filepath(path);
@@ -353,8 +353,7 @@ int Client::read_path(const char* path, char* path_info_buf, char** file_info_bu
                     std::string subdir(path);
                     subdir += ("/" + std::string(ent->d_name));
                     std::string standardization(subdir);
-                    standardization.insert(0, "d ");
-                    standardization += "\n";
+                    standardization += "/\n";
                     sprintf(path_info_buf, "%s%s", path_info_buf, standardization.c_str());
                     read_path(subdir.c_str(), path_info_buf, file_info_buf);
                 }
