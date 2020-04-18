@@ -1,5 +1,7 @@
-.vs
+/.vs
 /x64
 /Debug
 .ilk
 .pdb
+/.vscode
+*.json

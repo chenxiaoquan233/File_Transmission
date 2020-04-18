@@ -13,7 +13,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <iostream>
-#include <pthread.h>
+#include <thread>
+#include <vector>
 
 // WINDOWS INCLUDE
 #ifdef _WIN32
@@ -32,6 +33,8 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #endif
+
+using namespace std;
 
 //set common prefixes here
 class base

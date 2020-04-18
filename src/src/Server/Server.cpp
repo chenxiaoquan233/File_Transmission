@@ -3,8 +3,6 @@
 Server::Server(int port)
 {
 	cmd_port = port;
-	pid = new pthread_t[256];
-	thread_num = 0;
 }
 
 Server::~Server()
@@ -172,8 +170,10 @@ bool Server::recv_whole_file()
 	end_t = clock();
 	printf("recv time: %f\n", ((double)(end_t - start_t) / CLOCKS_PER_SEC));
 
-	thread_param* param = new thread_param(file_path, slice_num);
-	pthread_create(&pid[thread_num++], nullptr, mergeFile, param);
+	//thread_param* param = new thread_param(file_path, slice_num);
+	thread* new_thread = new thread(mergeFile, file_path, slice_num);
+	threads.push_back(new_thread);
+	//pthread_create(&pid[thread_num++], nullptr, mergeFile, param);
 	//mergeFile(file_path, slice_num);
 
 	return true;
@@ -492,10 +492,8 @@ bool Server::check_file(char* file_name, int file_len, int pkt_num)
 	return false;
 }
 
-void* mergeFile(void* param)
+void* mergeFile(char* fileaddress, int package)
 {
-	char* fileaddress = ((thread_param*)(param))->file_path;
-	int package = ((thread_param*)(param))->slice_num;
     int filelen = strlen(fileaddress);
 
     char* buffaddress;

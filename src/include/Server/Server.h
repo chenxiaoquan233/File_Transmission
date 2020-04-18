@@ -2,13 +2,6 @@
 #include "../file.h"
 #include "../packet_load.h"
 
-struct thread_param
-{
-	char* file_path;
-	int slice_num;
-	thread_param(char* fp, int sn){file_path = fp; slice_num = sn;}
-};
-
 class Server : public base
 {
 private:
@@ -17,8 +10,7 @@ private:
 	sockaddr_in serv_addr_data;
 	int cmd_port;
 	File* file;
-	pthread_t* pid;
-	int thread_num; 
+	vector<thread*> threads;
 	//shore the received data for a short time
 	char* buffer = nullptr;
 #ifdef _WIN32
@@ -95,4 +87,4 @@ public:
 };
 
 //combine file slice
-void* mergeFile(void* param);
+void* mergeFile(char* file_path, int slice_num);
