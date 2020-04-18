@@ -41,7 +41,7 @@ public:
 	//set up ip connection to a server
 	//return status
 	#ifdef _WIN32
-	bool sock_init(SOCKET* sock, const char* ip_addr, int port);
+	bool sock_init(SOCKET* sock, int port, int is_cmd);
 	#endif
 	#ifdef __linux__
 	bool sock_init(int* sock, int port, int is_cmd);
@@ -50,7 +50,7 @@ public:
 	//change port id
 	//return status
 	#ifdef _WIN32
-	bool set_port(SOCKET* sock, int port);
+	bool set_port(SOCKET* sock, int port, int is_cmd);
 	#endif
 	#ifdef __linux__
 	bool set_port(int* sock, int port, int is_cmd);

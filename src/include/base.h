@@ -45,5 +45,5 @@ protected:
 	const int UPD_HEADER_LENGTH = 19;
 	const int SEND_FREQ = 10;
 public:
-	inline int min(int a, int b) {return a > b ? b : a;}
+	inline int getmin(int a, int b) {return a > b ? b : a;};
 };

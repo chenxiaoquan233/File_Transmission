@@ -85,7 +85,7 @@ bool Client::read_file_slice(char* input_file_name)
 }
 
 #ifdef _WIN32
-bool Client::sock_init(SOCKET* sock, int port)
+bool Client::sock_init(SOCKET* sock, int port, int is_cmd)
 #endif
 #ifdef __linux__
 bool Client::sock_init(int* sock, int port, int is_cmd)
@@ -119,7 +119,7 @@ bool Client::sock_init(int* sock, int port, int is_cmd)
 }
 
 #ifdef _WIN32
-bool Client::set_port(SOCKET* sock, int port)
+bool Client::set_port(SOCKET* sock, int port,int  is_cmd)
 #endif
 #ifdef __linux__
 bool Client::set_port(int* sock, int port, int is_cmd)
@@ -149,7 +149,7 @@ bool Client::send_packet(int len)
     int already_send = 0;
     while(already_send < len)
     {
-        int send_len = min(len - already_send, MAX_UDP_PACKET_LEN);
+        int send_len = getmin(len - already_send, MAX_UDP_PACKET_LEN);
         int res=sendto(*data_sock, data->get_file_slice() + already_send, send_len, 0, (struct sockaddr*)&serv_addr_data, sizeof(serv_addr_data));
         if(res == -1)
         {
@@ -203,7 +203,7 @@ int Client::get_offset()
     int tot_num = file->get_tot_num();
     if(value != tot_num)
     {
-        bool need_rec[tot_num];
+        bool* need_rec=new bool[tot_num];
         memset(need_rec, 0, sizeof(need_rec));
 
         while(tot < recv_len)
@@ -314,15 +314,16 @@ int Client::read_path(const char* path, char* path_info_buf, char** file_info_bu
             standardization.insert(0, "d ");
             standardization += "\n";
             sprintf(path_info_buf, "%s%s", path_info_buf, standardization.c_str());
-            read_path(subdir.c_str(), buffer);
+            read_path(subdir.c_str(), path_info_buf, file_info_buf);
         }
         else if (strcmp(findData.name, ".") != 0 && strcmp(findData.name, "..") != 0)
         {
-            foldernumber++;
+            
             std::string filepath(path);
             filepath+= ("/" + std::string(findData.name));
             std::string standardization(filepath);
             strcpy(file_info_buf[file_num], standardization.c_str());
+            file_num++;
         }
     } while (_findnext(handle, &findData) == 0);
     _findclose(handle);
