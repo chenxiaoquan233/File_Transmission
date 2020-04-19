@@ -12,27 +12,27 @@ class Window:public QDialog
 {
 Q_OBJECT
 public:
-Window(QWidget *parent=0);
+Window(QWidget *parent = nullptr);
 private slots:
     void browse();
     void find();
 private:
-    QStringList findFiles(const QDir &directory,const QStringList &files,
-                          const QString &text);
-    void showFiles(const QDir &directory,const QStringList &files);
-    QPushButton *createButton(const QString &text,const char *member);
-    QComboBox *createComboBox(const QString &text = QString());
-    void createFilesTable();
     QComboBox *fileComboBox;
     QComboBox *textComboBox;
     QComboBox *directoryComboBox;
-    QLabel *fileLabel;
-    QLabel *textLabel;
     QLabel *directoryLabel;
-    QLabel *filesFoundLabel;
     QPushButton *browseButton;
-    QPushButton *findButton;
+    QPushButton *sendButton;
     QTableWidget *filesTable;
+    QStringList FileBs = {"B", "KB", "MB", "GB", "TB"};
+
+    void initFilesTable();
+    void showDirs(const QDir &directory,const QStringList &dirs);
+    void showFiles(const QDir &directory,const QStringList &files);
+
+    QStringList findFiles(const QDir &directory,const QStringList &files, const QString &text);
+    QPushButton *createButton(const QString &text, const char *member);
+    QComboBox *createComboBox(const QString &text, const bool editable);
 };
 
 #endif

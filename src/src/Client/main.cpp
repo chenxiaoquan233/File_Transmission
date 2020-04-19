@@ -1,3 +1,6 @@
+#include "../interface/mainwindow.h"
+#include <QApplication>
+#include "../interface/mainwindow.h"
 #include "../../include/Client/Client.h"
 
 bool parse_arg(int argc, char** argv, char** file_path, char** ip_addr, int* port)
@@ -13,7 +16,7 @@ bool parse_arg(int argc, char** argv, char** file_path, char** ip_addr, int* por
         if(S_ISDIR(s_buf.st_mode)) // is directory
         {
             DIR* dir = opendir(argv[1]);
-            if(dir == NULL) // dir not exists
+            if(dir == nullptr) // dir not exists
             {
                 puts("Directory not exists!");
                 exit(0);
@@ -30,7 +33,7 @@ bool parse_arg(int argc, char** argv, char** file_path, char** ip_addr, int* por
         else if(S_ISREG(s_buf.st_mode)) // is file
         {
             FILE* file = fopen(argv[1], "r");
-            if(file == NULL)
+            if(file == nullptr)
             {
                 puts("File not exists!");
                 exit(0);
@@ -109,7 +112,10 @@ int main(int argc, char** argv)
     }
     else
     {
-        // call GUI
+        QApplication app(argc,argv);
+        MainWindow m;
+        m.show();
+        return app.exec();
     }
 
     return 0;

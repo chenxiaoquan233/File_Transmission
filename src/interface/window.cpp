@@ -8,66 +8,58 @@
 #include <QProgressDialog>
 #include <QHeaderView>
 #include "window.h"
-Window::Window(QWidget *parent)
-    : QDialog(parent)
-{
-    browseButton = createButton(tr("&Browse..."),SLOT(browse()));
-    findButton = createButton(QStringLiteral("查找"),SLOT(find()));
-    fileComboBox = createComboBox(tr("*"));
-    textComboBox = createComboBox();
-    directoryComboBox = createComboBox(QDir::currentPath());
-    fileLabel = new QLabel(tr("Named:"));
-    textLabel = new QLabel(tr("Containing text:"));
-    directoryLabel = new QLabel(tr("In directory:"));
-    filesFoundLabel = new QLabel;
 
-    QPushButton *sentbtn = new QPushButton(QStringLiteral("发送"));
-    createFilesTable();
-    QHBoxLayout *buttonsLayout = new QHBoxLayout;
-    buttonsLayout->addWidget(sentbtn);
-    buttonsLayout->addStretch();
-    buttonsLayout->addWidget(findButton);
+Window::Window(QWidget *parent) : QDialog(parent)
+{
+    browseButton = createButton(QStringLiteral("Browse..."), SLOT(browse()));
+    sendButton   = createButton(QStringLiteral("查找")      , nullptr);
+
+    directoryComboBox = createComboBox("", true);
+
+    directoryLabel = new QLabel(tr("In directory:"));
+
+    initFilesTable();
+
     QGridLayout *mainLayout = new QGridLayout;
-//    mainLayout->addWidget(fileLabel,0,0);
-//    mainLayout->addWidget(fileComboBox,0,1,1,2);
-//    mainLayout->addWidget(textLabel,1,0);
-//    mainLayout->addWidget(textComboBox,1,1,1,2);
-    mainLayout->addWidget(directoryLabel,2,0);
-    mainLayout->addWidget(directoryComboBox,2,1);
-    mainLayout->addWidget(browseButton,2,2);
-    mainLayout->addWidget(filesTable,3,0,1,3);
-    mainLayout->addWidget(filesFoundLabel,4,0);
-    mainLayout->addLayout(buttonsLayout,5,0,1,3);
+
+    mainLayout->addWidget(directoryLabel   , 2, 0);
+    mainLayout->addWidget(directoryComboBox, 2, 1);
+    mainLayout->addWidget(browseButton     , 2, 2);
+
+    mainLayout->addWidget(filesTable       ,3, 0, 1, 3);
+    mainLayout->addWidget(sendButton       ,4, 2);
+
     setLayout(mainLayout);
     setWindowTitle(tr("Find Files"));
-    resize(700,300);
 }
+
 void Window::browse()
 {
-    QString directory = QFileDialog::getExistingDirectory(this,
-                               QObject::tr("Find Files"),QDir::currentPath());
-    if (!directory.isEmpty()) {
+    QString directory = QFileDialog::getExistingDirectory(this, QObject::tr("Find Files"), "/");
+    if (!directory.isEmpty())
+    {
         directoryComboBox->addItem(directory);
         directoryComboBox->setCurrentIndex(directoryComboBox->currentIndex() + 1);
+        find();
     }
 }
+
 void Window::find()
 {
+    //empty the table at start
     filesTable->setRowCount(0);
-    QString fileName = fileComboBox->currentText();
-    QString text = textComboBox->currentText();
+
     QString path = directoryComboBox->currentText();
     QDir directory = QDir(path);
-    QStringList files;
-    if (fileName.isEmpty()) fileName = "*";
-    files = directory.entryList(QStringList(fileName),
-                                QDir::Files | QDir::NoSymLinks);
-    if (!text.isEmpty())
-        files = findFiles(directory,files,text);
-    showFiles(directory,files);
+
+    //directories and then files
+    QStringList dirs  = directory.entryList(QStringList("*"), QDir::Dirs);
+    QStringList files = directory.entryList(QStringList("*"), QDir::Files | QDir::NoSymLinks);
+    showDirs(directory, dirs);
+    showFiles(directory, files);
 }
-QStringList Window::findFiles(const QDir &directory,const QStringList &files,
-                              const QString &text)
+
+QStringList Window::findFiles(const QDir &directory,const QStringList &files, const QString &text)
 {
     QProgressDialog progressDialog(this);
     progressDialog.setCancelButtonText(tr("&Cancel"));
@@ -97,15 +89,28 @@ QStringList Window::findFiles(const QDir &directory,const QStringList &files,
     }
     return foundFiles;
 }
+
 void Window::showFiles(const QDir &directory,const QStringList &files)
 {
-    for (int i = 0; i < files.size(); ++i) {
+    for (int i = 0; i < files.size(); ++i)
+    {
         QFile file(directory.absoluteFilePath(files[i]));
-        qint64 size = QFileInfo(file).size();
+
+        double size = QFileInfo(file).size();
+        int bs = 0;
+        while(size > 1024)
+        {
+            size /=1024;
+            bs ++;
+        }
+
         QTableWidgetItem *fileNameItem = new QTableWidgetItem(files[i]);
         fileNameItem->setFlags(Qt::ItemIsEnabled);
-        QTableWidgetItem *sizeItem = new QTableWidgetItem(tr("%1 KB")
-                                             .arg(int((size + 1023) / 1024)));
+
+        char size_show[20];
+        sprintf(size_show, "%.2f %s", size, FileBs[bs].toStdString().c_str());
+        QTableWidgetItem *sizeItem = new QTableWidgetItem(size_show);
+
         sizeItem->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
         sizeItem->setFlags(Qt::ItemIsEnabled);
         int row = filesTable->rowCount();
@@ -113,29 +118,60 @@ void Window::showFiles(const QDir &directory,const QStringList &files)
         filesTable->setItem(row,0,fileNameItem);
         filesTable->setItem(row,1,sizeItem);
     }
-    filesFoundLabel->setText(tr("%1 file(s) found").arg(files.size()));
 }
+
+void Window::showDirs(const QDir &directory,const QStringList &dirs)
+{
+    for (int i = 0; i < dirs.size(); ++i)
+    {
+        //self and parent dir not included
+        if(strcmp(dirs[i].toStdString().c_str(), ".") && strcmp(dirs[i].toStdString().c_str(), ".."))
+        {
+            QFile file(directory.absoluteFilePath(dirs[i]));
+            QTableWidgetItem *fileNameItem = new QTableWidgetItem(dirs[i]);
+            fileNameItem->setFlags(Qt::ItemIsEnabled);
+
+            int row = filesTable->rowCount();
+            filesTable->insertRow(row);
+            filesTable->setItem(row,0,fileNameItem);
+        }
+    }
+}
+
 QPushButton *Window::createButton(const QString &text,const char *member)
 {
     QPushButton *button = new QPushButton(text);
-    connect(button,SIGNAL(clicked()),this,member);
+    connect(button,SIGNAL(clicked()), this, member);
     return button;
 }
-QComboBox *Window::createComboBox(const QString &text)
+
+QComboBox *Window::createComboBox(const QString &text, const bool editable)
 {
     QComboBox *comboBox = new QComboBox;
-    comboBox->setEditable(true);
     comboBox->addItem(text);
-    comboBox->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Preferred);
+    comboBox->setEditable(editable);
+    comboBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     return comboBox;
 }
-void Window::createFilesTable()
+
+void Window::initFilesTable()
 {
-    filesTable = new QTableWidget(0,2);
+    //create a table height 0 width 3
+    filesTable = new QTableWidget(0, 3);
+    filesTable->resize(380,800);
+
+    //set table column titles
     QStringList labels;
-    labels << tr("File Name") << tr("Size");
+    labels << tr("Name") << tr("Size") << tr("Progress");
     filesTable->setHorizontalHeaderLabels(labels);
-//    filesTable->horizontalHeader()->setResizeMode(0,QHeaderView::Stretch);
+
     filesTable->verticalHeader()->hide();
+    filesTable->verticalHeader()->setDefaultSectionSize(10);
     filesTable->setShowGrid(false);
+
+    //set initial column width
+    int Table_width = filesTable->width();
+    filesTable->setColumnWidth(0, static_cast<int>(0.45 * Table_width));
+    filesTable->setColumnWidth(1, static_cast<int>(0.20 * Table_width));
+    filesTable->setColumnWidth(2, static_cast<int>(0.35 * Table_width));
 }

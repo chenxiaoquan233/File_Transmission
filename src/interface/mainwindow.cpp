@@ -10,12 +10,8 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
 
     layout->setMargin(0);
 
-
     Window *w1 = new Window;
-    Window *w2 = new Window;
 
     layout->addWidget(w1);
-
-    layout->addWidget(w2);
-
+    this->resize(400, 600);
 }
