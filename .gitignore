@@ -3,6 +3,6 @@
 /Debug
 .ilk
 .pdb
-/.vscode
+.vscode/
 *.json
-/build-File_Transmission-Desktop-Debug
+src/build-File_Transmission-Desktop-Debug/
