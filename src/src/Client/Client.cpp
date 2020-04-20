@@ -29,11 +29,12 @@ int Client::recv_cmd(char* buf, int len, int usec)
     struct timeval timeout;
     timeout.tv_sec = usec / 1000;
     timeout.tv_usec = usec % 1000;
-    if (setsockopt(cmd_sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) == -1) {
+    if (setsockopt(cmd_sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout)) == -1) {
         perror("setsockopt failed:");
     }
 
     int res = recvfrom(cmd_sock, buf, len, 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
+    return res;
 }
 
 int Client::send_file(char* input_file_name)
@@ -110,17 +111,17 @@ bool Client::sock_init(SOCKET* sock, int port, int is_cmd)
 bool Client::sock_init(int* sock, int port, int is_cmd)
 #endif
 {
-    #ifdef _WIN32
+#ifdef _WIN32
     WSADATA wsaData;
     WSAStartup(MAKEWORD(2, 2), &wsaData);
     *sock = socket(AF_INET, SOCK_DGRAM, 0);
-    #endif
+#endif
 
-    #ifdef __linux__
-    *sock = socket(AF_INET, SOCK_DGRAM, 0);
-    #endif
+#ifdef __linux__
+    * sock = socket(AF_INET, SOCK_DGRAM, 0);
+#endif
 
-    if(is_cmd)
+    if (is_cmd)
     {
         memset(&serv_addr_cmd, 0, sizeof(serv_addr_cmd));
         serv_addr_cmd.sin_family = AF_INET;
@@ -144,7 +145,7 @@ bool Client::set_port(SOCKET* sock, int port,int  is_cmd)
 bool Client::set_port(int* sock, int port, int is_cmd)
 #endif
 {
-    if(is_cmd)
+    if (is_cmd)
     {
         serv_addr_cmd.sin_port = htons(port);
         /*if (bind(*sock, (struct sockaddr*) & serv_addr_cmd, sizeof(sockaddr)) == -1)
@@ -162,7 +163,6 @@ bool Client::set_port(int* sock, int port, int is_cmd)
     }
     return true;
 }
-
 bool Client::send_packet(int len)
 {
     int already_send = 0;

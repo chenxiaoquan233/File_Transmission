@@ -87,4 +87,4 @@ public:
 };
 
 //combine file slice
-void* mergeFile(char* file_path, int slice_num);
+void mergeFile(char* file_path, int slice_num);

@@ -1,5 +1,4 @@
 #include "../../include/Server/Server.h"
-
 Server::Server(int port)
 {
 	cmd_port = port;
@@ -65,7 +64,7 @@ int Server::check_port()
 		//�˿��ѱ�ռ��
 		//printf("ռ��");
 		start_port++;
-		memset(&serv_addr2, 0, sizeof(serv_addr2));
+		memset(&serv_addr_data, 0, sizeof(serv_addr_data));
 		serv_addr_data.sin_family = AF_INET;
 		serv_addr_data.sin_addr.s_addr = htonl(INADDR_ANY);
 		serv_addr_data.sin_port = htons(start_port);
@@ -469,7 +468,7 @@ bool Server::check_file(char* file_name, int file_len, int pkt_num)
 				loaded_pack_num[temp] = true;
 			}
 			int need_send = total_packet_num - total_loaded_pack_num;
-			int need_send_num[need_send];
+			int *need_send_num = new int[need_send];
 			for (int i = 0, j = 0; i < total_packet_num; i++) 
 			{
 				if (loaded_pack_num[i] == false) 
@@ -486,6 +485,7 @@ bool Server::check_file(char* file_name, int file_len, int pkt_num)
 			if(sendto(cmd_sock, offset, strlen(offset), 0,(struct sockaddr*) & serv_addr_cmd, sizeof(serv_addr_cmd))<0)
 				perror("offset");
 			fclose(logfile);
+			delete(need_send_num);
 			return true;
 		}
 	}
@@ -496,23 +496,29 @@ bool Server::check_file(char* file_name, int file_len, int pkt_num)
 	return false;
 }
 
-void* mergeFile(char* fileaddress, int package)
+void mergeFile(char* fileaddress, int package)
 {
     int filelen = strlen(fileaddress);
 
     char* buffaddress;
-    if ((buffaddress = (char*)malloc(sizeof(char) * (filelen + 5))) == NULL)
-        puts("memory not available"), pthread_exit(NULL);
+	if ((buffaddress = (char*)malloc(sizeof(char) * (filelen + 5))) == NULL)
+	{
+		puts("memory not available"); return;
+	}
 
     FILE* dst, * src;
-    if ((dst = fopen(fileaddress, "wb")) == NULL)
-        puts("cannot create file"), pthread_exit(NULL);
-    for (int i = 1; i <= package; i++)
+	if ((dst = fopen(fileaddress, "wb")) == NULL)
+	{
+		puts("cannot create file"); return;
+	}
+	for (int i = 1; i <= package; i++)
     {
         sprintf(buffaddress, "%s.%03d", fileaddress, i);
-        if ((src = fopen(buffaddress, "rb")) == NULL)
-            puts("file not exists"), pthread_exit(NULL);
-        char sub;
+		if ((src = fopen(buffaddress, "rb")) == NULL)
+		{
+			puts("file not exists"); return;
+		}
+		char sub;
         while (!feof(src))
         {
             sub = fgetc(src);
@@ -522,7 +528,7 @@ void* mergeFile(char* fileaddress, int package)
         remove(buffaddress);
     }
     fclose(dst);
-    pthread_exit(NULL);
+	return;
 }
 
 int Server::get_ack(char* data)
