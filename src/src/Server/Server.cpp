@@ -417,6 +417,10 @@ bool Server::parse_cmd()
 		check_port();
 		recv_whole_file();
 	}
+	else if (cmd[0] == 'O' && cmd[1] == 'N')
+	{
+		sendto(cmd_sock, "1", 1, 0, (struct sockaddr*) & serv_addr_cmd, sizeof(serv_addr_cmd));
+	}
 	else
 	{
 		return false;

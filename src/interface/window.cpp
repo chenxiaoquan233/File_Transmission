@@ -11,23 +11,42 @@
 
 Window::Window(QWidget *parent) : QDialog(parent)
 {
-    browseButton = createButton(QStringLiteral("Browse..."), SLOT(browse()));
-    sendButton   = createButton(QStringLiteral("查找")      , nullptr);
+    connect_status = false;
 
+    browseButton  = createButton(QStringLiteral("Browse..."), SLOT(browse()));
+    sendButton    = createButton(QStringLiteral("Send")     , SLOT(try_send()));
+    connectButton = createButton(QStringLiteral("Connect")  , SLOT(try_connect()));
+
+    ipaddrComboBox = createComboBox("", true);
+    ipaddrComboBox->setMinimumWidth(150);
+    portComboBox = createComboBox("", true);
+    portComboBox->setMinimumWidth(80);
     directoryComboBox = createComboBox("", true);
 
-    directoryLabel = new QLabel(tr("In directory:"));
+    ipaddrLabel        = new QLabel(tr("Host Addr:"));
+    portLabel          = new QLabel(tr("Port:"));
+    directoryLabel     = new QLabel(tr("In directory:"));
+    connectStatusLabel = new QLabel(tr("not connected"));
 
     initFilesTable();
 
     QGridLayout *mainLayout = new QGridLayout;
 
-    mainLayout->addWidget(directoryLabel   , 2, 0);
-    mainLayout->addWidget(directoryComboBox, 2, 1);
-    mainLayout->addWidget(browseButton     , 2, 2);
+    mainLayout->addWidget(connectStatusLabel, 2, 0);
 
-    mainLayout->addWidget(filesTable       ,3, 0, 1, 3);
-    mainLayout->addWidget(sendButton       ,4, 2);
+    mainLayout->addWidget(ipaddrLabel       , 3, 0);
+    mainLayout->addWidget(ipaddrComboBox    , 3, 1, 1, 2);
+    mainLayout->addWidget(portLabel         , 3, 3);
+    mainLayout->addWidget(portComboBox      , 3, 4);
+    mainLayout->addWidget(connectButton     , 3, 5);
+
+    mainLayout->addWidget(directoryLabel    , 4, 0);
+    mainLayout->addWidget(directoryComboBox , 4, 1, 1, 4);
+    mainLayout->addWidget(browseButton      , 4, 5);
+
+    mainLayout->addWidget(filesTable        , 5, 0, 1, 6);
+
+    mainLayout->addWidget(sendButton        , 6, 5);
 
     setLayout(mainLayout);
     setWindowTitle(tr("Find Files"));
@@ -175,3 +194,17 @@ void Window::initFilesTable()
     filesTable->setColumnWidth(1, static_cast<int>(0.20 * Table_width));
     filesTable->setColumnWidth(2, static_cast<int>(0.35 * Table_width));
 }
+
+void Window::try_connect()
+{
+    QString ip_addr = ipaddrComboBox->currentText();
+    QString port = portComboBox->currentText();
+    connect_status = init_connect(client, ip_addr.toStdString().c_str(), port.toInt());
+    if(connect_status) connectStatusLabel->setText("Connected");
+}
+
+void Window::try_send()
+{
+
+}
+

@@ -77,38 +77,19 @@ bool parse_arg(int argc, char** argv, char** file_path, char** ip_addr, int* por
     return dir_flag;
 }
 
-
 int main(int argc, char** argv)
 {
     int port;
     char* file_path = nullptr;
     char* ip_addr = nullptr;
     bool dir_flag;
+
     if(argc > 1)
     {
+        Client* client;
         dir_flag = parse_arg(argc, argv, &file_path, &ip_addr, &port);
-        Client* client = new Client(ip_addr);
-        client->sock_init(client->get_cmd_sock(), port, 1);
-        if(dir_flag)
-        {
-            char* file_info[100];
-            for (int i = 0; i < 100; i++)
-            {
-                file_info[i] = new char[1000];
-                memset(file_info[i], 0, 1000);
-            }
-            char* path_info = new char[10000];
-            int file_number=client->read_path(file_path, path_info, file_info);
-            client->send_path_info(path_info);
-            for(int i = 0; i < file_number; ++i)
-            {
-                client->send_file(file_info[i]);
-            }
-        }
-        else
-        {
-            client->send_file(file_path);
-        }
+        if(init_connect(client, ip_addr, port))
+            start_send(client, file_path, dir_flag);
     }
     else
     {
@@ -119,4 +100,39 @@ int main(int argc, char** argv)
     }
 
     return 0;
+}
+
+bool init_connect(Client* client, const char* ip_addr, int port)
+{
+    client = new Client(ip_addr);
+    client->sock_init(client->get_cmd_sock(), port, 1);
+    client->send_cmd("ON");
+    char buf[1];
+    client->recv_cmd(buf, 1, 500);
+    cout<<buf<<endl;
+    return !strcmp(buf, "1");
+}
+
+void start_send(Client* client, char* file_path, bool dir_flag)
+{   
+    if(dir_flag)
+    {
+        char* file_info[100];
+        for (int i = 0; i < 100; i++)
+        {
+            file_info[i] = new char[1000];
+            memset(file_info[i], 0, 1000);
+        }
+        char* path_info = new char[10000];
+        int file_number=client->read_path(file_path, path_info, file_info);
+        client->send_path_info(path_info);
+        for(int i = 0; i < file_number; ++i)
+        {
+            client->send_file(file_info[i]);
+        }
+    }
+    else
+    {
+        client->send_file(file_path);
+    }
 }

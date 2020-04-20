@@ -11,7 +11,7 @@ private:
 	pkt_load* data = nullptr;
 	sockaddr_in serv_addr_cmd;
 	sockaddr_in serv_addr_data;
-	char* ip_addr;
+	const char* ip_addr;
 #ifdef _WIN32
 	SOCKET cmd_sock;
 	SOCKET* data_sock;
@@ -24,7 +24,7 @@ private:
 	
 public:
 	//constructor
-	Client(char* ip_addr);
+	Client(const char* ip_addr);
 
 	//destructor
 	~Client();
@@ -70,7 +70,7 @@ public:
 
 	int read_path(const char* path, char* path_info_buf, char** file_info_buf);
     
-	void send_cmd(char* cmd);
+	int send_cmd(char* cmd);
 	
 	bool send_path_info(char* buffer);
 
@@ -81,4 +81,9 @@ public:
 	int* get_cmd_sock();
 	#endif
 
+	int recv_cmd(char* buf, int len, int usec);
 };
+
+bool init_connect(Client* client, const char* ip_addr, int port);
+
+void start_send(Client* client, char* file_path, bool dir_flag);

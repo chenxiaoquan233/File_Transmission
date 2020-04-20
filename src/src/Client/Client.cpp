@@ -1,6 +1,6 @@
 #include "../../include/Client/Client.h"
 
-Client::Client(char* ip_addr)
+Client::Client(const char* ip_addr)
 {
     this->ip_addr = ip_addr;
 }
@@ -10,12 +10,31 @@ Client::~Client()
 
 }
 
-void Client::send_cmd(char* cmd)
+int Client::send_cmd(char* cmd)
 {
     puts(cmd);
     int res = sendto(cmd_sock, cmd, strlen(cmd), 0, (struct sockaddr*)&serv_addr_cmd, sizeof(serv_addr_cmd));
+    return res;
 }
 
+int Client::recv_cmd(char* buf, int len, int usec)
+{
+    #ifdef __linux__
+    socklen_t nSize = sizeof(sockaddr);
+    #endif
+    #ifdef WIN32
+    int nSize = sizeof(sockaddr);
+    #endif
+
+    struct timeval timeout;
+    timeout.tv_sec = usec / 1000;
+    timeout.tv_usec = usec % 1000;
+    if (setsockopt(cmd_sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) == -1) {
+        perror("setsockopt failed:");
+    }
+
+    int res = recvfrom(cmd_sock, buf, len, 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
+}
 
 int Client::send_file(char* input_file_name)
 {

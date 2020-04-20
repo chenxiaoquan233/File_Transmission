@@ -2,6 +2,7 @@
 #define WINDOW_H
 
 #include <QDialog>
+#include "../include/Client/Client.h"
 class QComboBox;
 class QDir;
 class QLabel;
@@ -16,13 +17,21 @@ Window(QWidget *parent = nullptr);
 private slots:
     void browse();
     void find();
+    void try_connect();
+    void try_send();
 private:
-    QComboBox *fileComboBox;
-    QComboBox *textComboBox;
+    bool connect_status;
+    Client* client;
+    QComboBox *ipaddrComboBox;
+    QComboBox *portComboBox;
     QComboBox *directoryComboBox;
+    QLabel *ipaddrLabel;
+    QLabel *portLabel;
     QLabel *directoryLabel;
+    QLabel *connectStatusLabel;
     QPushButton *browseButton;
     QPushButton *sendButton;
+    QPushButton *connectButton;
     QTableWidget *filesTable;
     QStringList FileBs = {"B", "KB", "MB", "GB", "TB"};
 
