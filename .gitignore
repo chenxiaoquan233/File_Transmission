@@ -6,3 +6,5 @@
 .vscode/
 *.json
 build-File_Transmission-Desktop-Debug/
+.o
+.obj
