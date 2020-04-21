@@ -1,6 +1,5 @@
-#include "../interface/mainwindow.h"
+#include "../../interface/mainwindow.h"
 #include <QApplication>
-#include "../interface/mainwindow.h"
 #include "../../include/Client/Client.h"
 
 bool parse_arg(int argc, char** argv, char** file_path, char** ip_addr, int* port)
