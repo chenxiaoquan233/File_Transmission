@@ -206,6 +206,7 @@ void Window::try_connect()
 void Window::try_send()
 {
     QString dir = directoryComboBox->currentText();
-    start_send(client, dir.toStdString().c_str(), 1);
+    if(!start_send(client, dir.toStdString().c_str(), 1))
+        connectStatusLabel->setText("not connected");
 }
 

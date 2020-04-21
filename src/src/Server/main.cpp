@@ -36,11 +36,13 @@ bool parse_arg(int argc, char** argv)
 int main(int argc, char** argv)
 {
     parse_arg(argc, argv);
-    Server* server = new Server(atoi(argv[3]));
+    Server* server = new Server(argv[2], atoi(argv[3]));
+	server->set_path(argv[1]);
 	if(server->set_listen())
 	{
 		while(1)
 		{
+			puts("listen");
 			server->parse_cmd();
 		}
 	}

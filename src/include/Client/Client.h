@@ -30,7 +30,7 @@ public:
 	~Client();
 
 	//Incomplete parameters 
-    int send_file(const char* input_file_name, int path_offs);
+    bool send_file(const char* input_file_name, int path_offs);
 
 	//read file slice from a specified file
 	//stored in file_slice
@@ -86,4 +86,4 @@ public:
 
 bool init_connect(Client*& client, const char* ip_addr, int port);
 
-void start_send(Client*& client, const char* file_path, bool dir_flag);
+bool start_send(Client*& client, const char* file_path, bool dir_flag);

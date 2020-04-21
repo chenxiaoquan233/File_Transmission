@@ -38,25 +38,27 @@ int Client::recv_cmd(char* buf, int len, int usec)
     return res;
 }
 
-int Client::send_file(const char* input_file_name, int path_offs)
+bool Client::send_file(const char* input_file_name, int path_offs)
 {
     file = new File(input_file_name, MAX_PACKET_DATA_BYTE_LENGTH, 0);
     char* cmd;
-    if ((cmd = (char*)malloc(sizeof(char) * MAX_PACKET_DATA_BYTE_LENGTH)) == NULL)
+    if ((cmd = (char*)malloc(sizeof(char) * MAX_PACKET_DATA_BYTE_LENGTH)) == nullptr)
     {
-        return -1;
+        return false;
     }
 
     sprintf(cmd, "SEND %s %d %d", input_file_name + path_offs, file->get_tot_num(), file->get_file_len());
     send_cmd(cmd);
     int offs = -1;
-    while (offs == -1) offs = get_offset();
-    if(offs == 0) return 0;
+    offs = get_offset();
+    if(offs == 0) return true;
+    else if(offs == -1) return false;
 
     sprintf(cmd, "PORT");
     send_cmd(cmd);
     int port = -1;
-    while (port == -1) port = get_port();
+    port = get_port();
+    if(port == -1) return false;
 
     #ifdef _WIN32
     data_sock = new SOCKET;
@@ -72,11 +74,11 @@ int Client::send_file(const char* input_file_name, int path_offs)
     {
         read_file_slice(input_file_name + path_offs);
         int slice_len = data->get_slice_len();
-        bool res = send_packet(slice_len);
+        if(!send_packet(slice_len)) return false;
         file->pkt_send(data->get_slice_num() - 1);
     }
 
-    return 0;
+    return true;
 }
 
 bool Client::read_file_slice(const char* input_file_name)
@@ -119,7 +121,7 @@ bool Client::sock_init(int* sock, int port, int is_cmd)
 #endif
 
 #ifdef __linux__
-    * sock = socket(AF_INET, SOCK_DGRAM, 0);
+    *sock = socket(AF_INET, SOCK_DGRAM, 0);
 #endif
 
     if (is_cmd)
@@ -136,6 +138,16 @@ bool Client::sock_init(int* sock, int port, int is_cmd)
         serv_addr_data.sin_addr.s_addr = inet_addr(ip_addr);
         serv_addr_data.sin_port = htons(port);
     }
+
+    struct timeval timeout;
+    timeout.tv_sec = 5;
+    timeout.tv_usec = 0;
+    if (setsockopt(*sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) == -1)
+    {
+        perror("setsockopt timeout failed:");
+        return false;
+    }
+
     return set_port(sock, port, is_cmd);
 }
 
@@ -149,18 +161,10 @@ bool Client::set_port(int* sock, int port, int is_cmd)
     if (is_cmd)
     {
         serv_addr_cmd.sin_port = htons(port);
-        /*if (bind(*sock, (struct sockaddr*) & serv_addr_cmd, sizeof(sockaddr)) == -1)
-        {
-            return false;
-        }*/
     }
     else
     {
         serv_addr_data.sin_port = htons(port);
-        /*if (bind(*sock, (struct sockaddr*) & serv_addr_data, sizeof(sockaddr)) == -1)
-        {
-            return false;
-        }*/
     }
     return true;
 }
@@ -183,9 +187,9 @@ bool Client::send_packet(int len)
             exit(0);
         }
         already_send += send_len;
-        get_ack();
+        if(!get_ack()) return false;
     }
-    return 1;
+    return true;
 }
 
 int Client::get_offset()
@@ -211,6 +215,7 @@ int Client::get_offset()
     #endif
 
     int recv_len = recvfrom(cmd_sock, buffer, 12, 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
+    if(recv_len = -1) return -1;
 
     if (buffer[0] != 'O' || buffer[1] != 'F' || buffer[2] != 'F' || buffer[3] != 'S')return -1;
     int value = 0;
@@ -274,7 +279,9 @@ int Client::get_port()
     #ifdef WIN32
     int nSize = sizeof(sockaddr);
     #endif
-    recvfrom(cmd_sock, buffer, 12, 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
+
+    if(recvfrom(cmd_sock, buffer, 12, 0, (struct sockaddr*) & serv_addr_cmd, &nSize) < 0)
+        return -1;
 
     if (buffer[0] != 'P' || buffer[1] != 'O' || buffer[2] != 'R' || buffer[3] != 'T')return -1;
     int value = 0;
@@ -308,9 +315,9 @@ bool Client::get_ack()
     #ifdef WIN32
 	int nSize = sizeof(sockaddr);
     #endif
-    while(recvfrom(cmd_sock, num_buffer, 4, 0, (struct sockaddr*)&serv_addr_cmd, &nSize) == -1);
+    if(recvfrom(cmd_sock, num_buffer, 4, 0, (struct sockaddr*)&serv_addr_cmd, &nSize) == -1)
+        return false;
 
-    //printf("ACK: %d,slice_num: %d\n", atoi(num_buffer), data->get_slice_num());
     return atoi(num_buffer) == data->get_slice_num();
 }
 

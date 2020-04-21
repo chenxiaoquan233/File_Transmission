@@ -1,6 +1,7 @@
 #include "../../include/Server/Server.h"
-Server::Server(int port)
+Server::Server(char* addr, int port)
 {
+	listen_addr = addr;
 	cmd_port = port;
 }
 
@@ -21,7 +22,8 @@ bool Server::set_listen()
 	#endif
     memset(&serv_addr_cmd, 0, sizeof(serv_addr_cmd));
     serv_addr_cmd.sin_family = AF_INET;
-    serv_addr_cmd.sin_addr.s_addr = INADDR_ANY;
+    serv_addr_cmd.sin_addr.s_addr = inet_addr(listen_addr);
+	//serv_addr_cmd.sin_addr.s_addr = INADDR_ANY;
     serv_addr_cmd.sin_port = htons(cmd_port);
 	
     int on = 1;
@@ -38,11 +40,11 @@ bool Server::set_listen()
 	}
 
 	struct timeval timeout;
-    timeout.tv_sec = 1;
+    timeout.tv_sec = 5;
     timeout.tv_usec = 0;
     if (setsockopt(cmd_sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) == -1) 
 	{
-        perror("setsockopt failed:");
+        perror("setsockopt timeout failed:");
 		return false;
     }
 
@@ -164,6 +166,7 @@ bool Server::recv_whole_file()
 	char* file_path = new char[50];
 	char* file_slice;
 	int data_len = 0;
+	char* file_name = new char[100];
 
 	while(!(file->eof()))
 	{
@@ -184,11 +187,7 @@ bool Server::recv_whole_file()
 			write_logfile(file_path, (short)slice_num, sizeof(short));
 
 			// write file slice
-			char file_name[100];
-			sprintf(file_name, "%s.%03d", file_path, slice_num);
-
-			//for debug
-			puts(file_path);
+			sprintf(file_name, "%s/%s.%03d", path, file_path, slice_num);
 
 			FILE* output_file_slice = fopen(file_name, "wb");
 			fwrite(file_slice, 1, data_len, output_file_slice);
@@ -204,7 +203,9 @@ bool Server::recv_whole_file()
 	end_t = clock();
 	printf("recv time: %f\n", ((double)(end_t - start_t) / CLOCKS_PER_SEC));
 
-	thread* new_thread = new thread(mergeFile, file_path, slice_num);
+	sprintf(file_name, "%s/%s", path, file_path);
+	puts(file_name);
+	thread* new_thread = new thread(mergeFile, file_name, slice_num);
 	threads.push_back(new_thread);
 
 	return true;
@@ -257,9 +258,6 @@ int Server::read_FILEinformation(FILE*& output_file, char* origin_data, int& dat
         info_length++;
     }
 
-	//for debug
-	puts(FILE_path);
-
     output_file = fopen(FILE_path, "wb");
     return info_length + 1;
 }
@@ -278,7 +276,6 @@ int Server::return_packet_serial_number()
 	while (data->get_file_slice()[position] != '?')
 		position++;
 
-	
 	position_first_file = position;
 	while (data->get_file_slice()[position_first_file] != '&')
 	{
@@ -389,7 +386,7 @@ bool Server::parse_path()
 	#endif
 
 	if(recvfrom(data_sock, buf, 256 * sizeof(char), 0, (struct sockaddr*) & serv_addr_data, &nSize) < 0)
-		return;
+		return false;
 
 	int pos = 0;
 	while(pos < strlen(buf))
@@ -421,7 +418,7 @@ void Server::parse_cmd()
 	int res = -1;
 
 	res = recvfrom(cmd_sock, cmd, 256 * sizeof(char), 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
-	if(res != -1) return;
+	if(res == -1) return;
 
 	if (cmd[0] == 'I' && cmd[1] == 'N' && cmd[2] == 'F' && cmd[3] == 'O')
 	{
@@ -447,11 +444,15 @@ void Server::parse_cmd()
 		{
 			file_len *= 10, file_len += cmd[i++] - '0';
 		}
-		file = new File(file_name, tot_pkt_num);
-		if(!check_file(file_name, file_len, tot_pkt_num)) 
+		
+		char* send_file_name = new char[100];
+		memset(send_file_name, 0, 100);
+		sprintf(send_file_name, "%s/%s", path, file_name);
+		file = new File(send_file_name, tot_pkt_num);
+		if(!check_file(send_file_name, file_len, tot_pkt_num)) 
 		{
-			write_logfile(file_name, (short)tot_pkt_num, sizeof(short));
-			write_logfile(file_name, file_len, sizeof(int));
+			write_logfile(send_file_name, (short)tot_pkt_num, sizeof(short));
+			write_logfile(send_file_name, file_len, sizeof(int));
 		}
 	}
 	else if (cmd[0] == 'P' && cmd[1] == 'O' && cmd[2] == 'R' && cmd[3] == 'T')
@@ -471,9 +472,6 @@ bool Server::write_logfile(char* path, int number, int size)
 	char logfile_path[50];
 	sprintf(logfile_path, "%s.FTlog", path);
 
-	//for debug
-	puts(logfile_path);
-
 	FILE* logfile = fopen(logfile_path, "ab");
 	fwrite(&number, size, 1, logfile);
 	fclose(logfile);
@@ -486,9 +484,6 @@ bool Server::check_file(char* file_name, int file_len, int pkt_num)
 	sprintf(logfile_path, "%s.FTlog", file_name);
 	FILE* logfile;
 
-	//for debug
-	puts(logfile_path);
-	
 	logfile = fopen(logfile_path, "rb");
 	if (logfile) 
 	{
@@ -500,7 +495,6 @@ bool Server::check_file(char* file_name, int file_len, int pkt_num)
 
 		if (log_file_length == file_len) 
 		{
-			printf("%d,%d\n", log_file_length, file_len);
 			bool* loaded_pack_num = new bool[total_packet_num];
 			for (int i = 0; i < total_packet_num; i++)
 				loaded_pack_num[i] = false;
@@ -510,7 +504,6 @@ bool Server::check_file(char* file_name, int file_len, int pkt_num)
 			for (; !feof(logfile); total_loaded_pack_num++) 
 			{
 				fread(&temp, sizeof(short), 1, logfile);
-				//if(loaded_pack_num[temp] == true) total_loaded_pack_num--;
 				loaded_pack_num[temp] = true;
 			}
 			int need_send = total_packet_num - total_loaded_pack_num;
@@ -545,6 +538,7 @@ bool Server::check_file(char* file_name, int file_len, int pkt_num)
 void mergeFile(char* fileaddress, int package)
 {
     int filelen = strlen(fileaddress);
+	cout<<fileaddress<<' '<<filelen<<endl;
 
     char* buffaddress;
 	if ((buffaddress = (char*)malloc(sizeof(char) * (filelen + 5))) == NULL)
@@ -561,6 +555,7 @@ void mergeFile(char* fileaddress, int package)
 	for (int i = 1; i <= package; i++)
     {
         sprintf(buffaddress, "%s.%03d", fileaddress, i);
+		puts(buffaddress);
 		if ((src = fopen(buffaddress, "rb")) == NULL)
 		{
 			puts("file not exists"); return;
@@ -593,4 +588,9 @@ int Server::get_ack(char* data)
 		ack_num += data[i++] - '0';
 	}
 	return ack_num;
+}
+
+void Server::set_path(char* path)
+{
+	this->path = path;
 }

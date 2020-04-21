@@ -6,6 +6,8 @@ class Server : public base
 {
 private:
 	pkt_load* data;
+	char* path;
+	char* listen_addr;
 	sockaddr_in serv_addr_cmd;
 	sockaddr_in serv_addr_data;
 	int cmd_port;
@@ -23,7 +25,7 @@ private:
 #endif
 public:
 	//constructor
-	Server(int port);
+	Server(char* addr, int port);
 	//destruuctor
 	~Server();
 	
@@ -84,6 +86,8 @@ public:
 	bool check_file(char* file_name, int file_len, int pkt_num);
 
 	int get_ack(char* data);
+
+	void set_path(char* path);
 };
 
 //combine file slice
