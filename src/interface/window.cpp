@@ -199,12 +199,13 @@ void Window::try_connect()
 {
     QString ip_addr = ipaddrComboBox->currentText();
     QString port = portComboBox->currentText();
-    connect_status = init_connect(client, ip_addr.toStdString().c_str(), port.toInt());
+    connect_status = init_connect(ref(client), ip_addr.toStdString().c_str(), port.toInt());
     if(connect_status) connectStatusLabel->setText("Connected");
 }
 
 void Window::try_send()
 {
-
+    QString dir = directoryComboBox->currentText();
+    start_send(client, dir.toStdString().c_str(), 1);
 }
 

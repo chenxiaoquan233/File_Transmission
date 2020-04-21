@@ -1,7 +1,9 @@
+#include <stdio.h>
+
 class File
 {
 private:
-    char* file_path = nullptr;
+    const char* file_path = nullptr;
     FILE* file_ptr = nullptr;
     int file_len = -1;
     int pkt_num = -1;
@@ -12,8 +14,8 @@ private:
     int slice_len = -1;
 public:
     //constructor
-    File(char* input_file, int pkt_len, int offset);
-    File(char* input_file, int pkt_num);
+    File(const char* input_file, int pkt_len, int offset);
+    File(const char* input_file, int pkt_num);
 
     //deconstructor
     ~File();

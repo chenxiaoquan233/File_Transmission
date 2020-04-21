@@ -3,7 +3,7 @@
 #include <string.h>
 #include "../include/file.h"
 
-File::File(char* input_file, int _pkt_num)
+File::File(const char* input_file, int _pkt_num)
 {
     file_path = input_file;
     pkt_num = _pkt_num;
@@ -11,7 +11,7 @@ File::File(char* input_file, int _pkt_num)
     memset(send_rec, 0, _pkt_num * sizeof(bool));
 }
 
-File::File(char* input_file, int pkt_len, int offset)
+File::File(const char* input_file, int pkt_len, int offset)
 {
     file_path = input_file;
     file_ptr = fopen(file_path, "rb");

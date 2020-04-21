@@ -30,13 +30,13 @@ public:
 	~Client();
 
 	//Incomplete parameters 
-	int send_file(char* input_file_name);
+    int send_file(const char* input_file_name, int path_offs);
 
 	//read file slice from a specified file
 	//stored in file_slice
 	//length constrainted by MAX_PACKET_DATA_BYTE_LENGTH in base.h
 	//return status
-	bool read_file_slice(char* input_file_name);
+    bool read_file_slice(const char* input_file_name);
 
 	//set up ip connection to a server
 	//return status
@@ -84,6 +84,6 @@ public:
 	int recv_cmd(char* buf, int len, int usec);
 };
 
-bool init_connect(Client* client, const char* ip_addr, int port);
+bool init_connect(Client*& client, const char* ip_addr, int port);
 
-void start_send(Client* client, char* file_path, bool dir_flag);
+void start_send(Client*& client, const char* file_path, bool dir_flag);

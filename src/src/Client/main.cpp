@@ -102,19 +102,18 @@ int main(int argc, char** argv)
     return 0;
 }
 
-bool init_connect(Client* client, const char* ip_addr, int port)
+bool init_connect(Client*& client, const char* ip_addr, int port)
 {
     client = new Client(ip_addr);
     client->sock_init(client->get_cmd_sock(), port, 1);
     client->send_cmd("ON");
     char buf[1];
     client->recv_cmd(buf, 1, 500);
-    cout<<buf<<endl;
     return !strcmp(buf, "1");
 }
 
-void start_send(Client* client, char* file_path, bool dir_flag)
-{   
+void start_send(Client*& client, const char* file_path, bool dir_flag)
+{
     if(dir_flag)
     {
         char* file_info[100];
@@ -124,15 +123,21 @@ void start_send(Client* client, char* file_path, bool dir_flag)
             memset(file_info[i], 0, 1000);
         }
         char* path_info = new char[10000];
+        memset(path_info, 0, 10000 * sizeof(char));
         int file_number=client->read_path(file_path, path_info, file_info);
-        client->send_path_info(path_info);
-        for(int i = 0; i < file_number; ++i)
+        cout<<path_info<<endl;
+        if(client->send_path_info(path_info))
         {
-            client->send_file(file_info[i]);
+            int len = strlen(file_path) + 1;
+            for(int i = 0; i < file_number; ++i)
+            {
+                cout<<file_info[i] + len<<endl;
+                client->send_file(file_info[i], len);
+            }
         }
     }
     else
     {
-        client->send_file(file_path);
+        client->send_file(file_path, 0);
     }
 }
