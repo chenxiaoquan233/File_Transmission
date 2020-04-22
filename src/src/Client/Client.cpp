@@ -2,7 +2,8 @@
 
 Client::Client(const char* ip_addr)
 {
-    this->ip_addr = ip_addr;
+    this->ip_addr = new char[20];
+    strcpy(this->ip_addr, ip_addr);
 }
 
 Client::~Client()
@@ -51,8 +52,7 @@ bool Client::send_file(const char* input_file_name, int path_offs)
     send_cmd(cmd);
     int offs = -1;
     offs = get_offset();
-    if(offs == 0) return true;
-    else if(offs == -1) return false;
+    if(offs == -1) return false;
 
     sprintf(cmd, "PORT");
     send_cmd(cmd);
@@ -194,18 +194,6 @@ bool Client::send_packet(int len)
 
 int Client::get_offset()
 {
-    struct timeval timeout;
-    timeout.tv_sec = 0;
-    timeout.tv_usec = 200;
-    #ifdef __linux__
-    if (setsockopt(cmd_sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) == -1)
-        return -1;
-    #endif
-    #ifdef WIN32
-    if (setsockopt(cmd_sock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout)) == -1)
-        return -1;
-    #endif
-
     char buffer[3000];
     #ifdef __linux__
     socklen_t nSize = sizeof(sockaddr);
@@ -215,9 +203,9 @@ int Client::get_offset()
     #endif
 
     int recv_len = recvfrom(cmd_sock, buffer, 12, 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
-    if(recv_len = -1) return -1;
+    if(recv_len == -1) return -1;
 
-    if (buffer[0] != 'O' || buffer[1] != 'F' || buffer[2] != 'F' || buffer[3] != 'S')return -1;
+    if (buffer[0] != 'O' || buffer[1] != 'F' || buffer[2] != 'F' || buffer[3] != 'S') return -1;
     int value = 0;
     int tot = strlen("OFFS ");
 
@@ -321,9 +309,8 @@ bool Client::get_ack()
     return atoi(num_buffer) == data->get_slice_num();
 }
 
-int Client::read_path(const char* path, char* path_info_buf, char** file_info_buf)
+int Client::read_path(const char* path, char* path_info_buf, char** file_info_buf, int& file_num)
 {
-    static int file_num;
     #ifdef WIN32
     intptr_t handle;
     _finddata_t findData;
@@ -346,7 +333,7 @@ int Client::read_path(const char* path, char* path_info_buf, char** file_info_bu
             standardization.insert(0, "d ");
             standardization += "\n";
             sprintf(path_info_buf, "%s%s", path_info_buf, standardization.c_str());
-            read_path(subdir.c_str(), path_info_buf, file_info_buf);
+            read_path(subdir.c_str(), path_info_buf, file_info_buf, file_num);
         }
         else if (strcmp(findData.name, ".") != 0 && strcmp(findData.name, "..") != 0)
         {
@@ -362,10 +349,10 @@ int Client::read_path(const char* path, char* path_info_buf, char** file_info_bu
     #endif
 
     #ifdef __linux__
-    struct dirent* ent = NULL;
+    struct dirent* ent = nullptr;
     DIR* pDir;
     pDir = opendir(path);
-    while (NULL != (ent = readdir(pDir)))
+    while (nullptr != (ent = readdir(pDir)))
     {
         if (1 || ent->d_reclen == 24)
         {
@@ -388,7 +375,7 @@ int Client::read_path(const char* path, char* path_info_buf, char** file_info_bu
                     std::string standardization(subdir);
                     standardization += "/\n";
                     sprintf(path_info_buf, "%s%s", path_info_buf, standardization.c_str());
-                    read_path(subdir.c_str(), path_info_buf, file_info_buf);
+                    read_path(subdir.c_str(), path_info_buf, file_info_buf, file_num);
                 }
             }
         }
@@ -405,7 +392,8 @@ bool Client::send_path_info(char* buffer)
         char info[6] = "INFO";
         send_cmd(info);
         int port = -1;
-        while(port == -1) port = get_port();
+        port = get_port();
+        if(port == -1) return false;
 
         #ifdef _WIN32
         data_sock = new SOCKET;
@@ -451,11 +439,8 @@ bool Client::send_path_info(char* buffer)
                 #ifdef WIN32
                 int nSize = sizeof(sockaddr);
                 #endif
-                while(strcmp(ret, "INFO"))
-                {
-                    recvfrom(cmd_sock, ret, 64, 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
-                }
-                return true;
+                recvfrom(cmd_sock, ret, 64, 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
+                return !strcmp(ret, "INFO");
             }
             std::cout << "Transmission failed, retransmission limit reached" << std::endl;
             return false;

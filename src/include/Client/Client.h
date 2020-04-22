@@ -11,7 +11,7 @@ private:
 	pkt_load* data = nullptr;
 	sockaddr_in serv_addr_cmd;
 	sockaddr_in serv_addr_data;
-	const char* ip_addr;
+    char* ip_addr;
 #ifdef _WIN32
 	SOCKET cmd_sock;
 	SOCKET* data_sock;
@@ -68,7 +68,7 @@ public:
 	//rev port id from server
 	int get_port();
 
-	int read_path(const char* path, char* path_info_buf, char** file_info_buf);
+    int read_path(const char* path, char* path_info_buf, char** file_info_buf, int& file_num);
     
 	int send_cmd(char* cmd);
 	

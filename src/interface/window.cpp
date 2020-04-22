@@ -7,6 +7,7 @@
 #include <QTableWidget>
 #include <QProgressDialog>
 #include <QHeaderView>
+#include <QMessageBox>
 #include "window.h"
 
 Window::Window(QWidget *parent) : QDialog(parent)
@@ -21,7 +22,7 @@ Window::Window(QWidget *parent) : QDialog(parent)
     ipaddrComboBox->setMinimumWidth(150);
     portComboBox = createComboBox("", true);
     portComboBox->setMinimumWidth(80);
-    directoryComboBox = createComboBox("", true);
+    directoryComboBox = createComboBox("", false);
 
     ipaddrLabel        = new QLabel(tr("Host Addr:"));
     portLabel          = new QLabel(tr("Port:"));
@@ -74,8 +75,8 @@ void Window::find()
     //directories and then files
     QStringList dirs  = directory.entryList(QStringList("*"), QDir::Dirs);
     QStringList files = directory.entryList(QStringList("*"), QDir::Files | QDir::NoSymLinks);
-    showDirs(directory, dirs);
-    showFiles(directory, files);
+    showDirs(directory, dirs, 0);
+    showFiles(directory, files, 0);
 }
 
 QStringList Window::findFiles(const QDir &directory,const QStringList &files, const QString &text)
@@ -109,7 +110,7 @@ QStringList Window::findFiles(const QDir &directory,const QStringList &files, co
     return foundFiles;
 }
 
-void Window::showFiles(const QDir &directory,const QStringList &files)
+void Window::showFiles(const QDir &directory,const QStringList &files, int layers)
 {
     for (int i = 0; i < files.size(); ++i)
     {
@@ -122,8 +123,9 @@ void Window::showFiles(const QDir &directory,const QStringList &files)
             size /=1024;
             bs ++;
         }
-
-        QTableWidgetItem *fileNameItem = new QTableWidgetItem(files[i]);
+        string spaces;
+        for(int i = 0; i < layers; ++i) spaces += "-";
+        QTableWidgetItem *fileNameItem = new QTableWidgetItem(QString::fromStdString(spaces) + files[i]);
         fileNameItem->setFlags(Qt::ItemIsEnabled);
 
         char size_show[20];
@@ -139,20 +141,31 @@ void Window::showFiles(const QDir &directory,const QStringList &files)
     }
 }
 
-void Window::showDirs(const QDir &directory,const QStringList &dirs)
+void Window::showDirs(const QDir &directory,const QStringList &dirs, int layers)
 {
     for (int i = 0; i < dirs.size(); ++i)
     {
         //self and parent dir not included
         if(strcmp(dirs[i].toStdString().c_str(), ".") && strcmp(dirs[i].toStdString().c_str(), ".."))
         {
-            QFile file(directory.absoluteFilePath(dirs[i]));
-            QTableWidgetItem *fileNameItem = new QTableWidgetItem(dirs[i]);
+            string spaces;
+            for(int i = 0; i < layers; ++i) spaces += "-";
+            QTableWidgetItem *fileNameItem = new QTableWidgetItem(QString::fromStdString(spaces) + dirs[i]);
             fileNameItem->setFlags(Qt::ItemIsEnabled);
 
             int row = filesTable->rowCount();
             filesTable->insertRow(row);
             filesTable->setItem(row,0,fileNameItem);
+
+            QFileInfo fileinfo(directory.absoluteFilePath(dirs[i]));
+            if(fileinfo.isDir())
+            {
+                QDir sub_directory = QDir(directory.absoluteFilePath(dirs[i]));
+                QStringList sub_dirs  = sub_directory.entryList(QStringList("*"), QDir::Dirs);
+                QStringList sub_files = sub_directory.entryList(QStringList("*"), QDir::Files | QDir::NoSymLinks);
+                showDirs(sub_directory, sub_dirs, layers + 1);
+                showFiles(sub_directory, sub_files, layers + 1);
+            }
         }
     }
 }
@@ -176,12 +189,12 @@ QComboBox *Window::createComboBox(const QString &text, const bool editable)
 void Window::initFilesTable()
 {
     //create a table height 0 width 3
-    filesTable = new QTableWidget(0, 3);
+    filesTable = new QTableWidget(0, 2);
     filesTable->resize(380,800);
 
     //set table column titles
     QStringList labels;
-    labels << tr("Name") << tr("Size") << tr("Progress");
+    labels << tr("Name") << tr("Size");
     filesTable->setHorizontalHeaderLabels(labels);
 
     filesTable->verticalHeader()->hide();
@@ -190,9 +203,8 @@ void Window::initFilesTable()
 
     //set initial column width
     int Table_width = filesTable->width();
-    filesTable->setColumnWidth(0, static_cast<int>(0.45 * Table_width));
+    filesTable->setColumnWidth(0, static_cast<int>(0.8  * Table_width));
     filesTable->setColumnWidth(1, static_cast<int>(0.20 * Table_width));
-    filesTable->setColumnWidth(2, static_cast<int>(0.35 * Table_width));
 }
 
 void Window::try_connect()
@@ -200,13 +212,41 @@ void Window::try_connect()
     QString ip_addr = ipaddrComboBox->currentText();
     QString port = portComboBox->currentText();
     connect_status = init_connect(ref(client), ip_addr.toStdString().c_str(), port.toInt());
-    if(connect_status) connectStatusLabel->setText("Connected");
+    if(connect_status)
+    {
+        connectStatusLabel->setText("Connected");
+        QMessageBox* msgb = new QMessageBox("", "Connect Success!", QMessageBox::NoIcon, QMessageBox::Ok, QMessageBox::NoButton, QMessageBox::NoButton);
+        msgb->exec();
+    }
+    else
+    {
+        QMessageBox* msgb = new QMessageBox("", "Connect Failed!", QMessageBox::Warning, QMessageBox::Ok, QMessageBox::NoButton, QMessageBox::NoButton);
+        msgb->exec();
+    }
 }
 
 void Window::try_send()
 {
-    QString dir = directoryComboBox->currentText();
-    if(!start_send(client, dir.toStdString().c_str(), 1))
-        connectStatusLabel->setText("not connected");
+    if(!connect_status)
+    {
+        QMessageBox* msgb = new QMessageBox("", "Please Connect First!", QMessageBox::Warning, QMessageBox::Ok, QMessageBox::NoButton, QMessageBox::NoButton);
+        msgb->exec();
+    }
+    else
+    {
+        QString dir = directoryComboBox->currentText();
+        if(dir.length() > 0)
+        {
+            if(!start_send(client, dir.toStdString().c_str(), 1))
+            {
+                connectStatusLabel->setText("not connected");
+                connect_status = false;
+                QMessageBox* msgb = new QMessageBox("", "Connect Interrupted!", QMessageBox::Warning, QMessageBox::Ok, QMessageBox::NoButton, QMessageBox::NoButton);
+                msgb->exec();
+            }
+        }
+        QMessageBox* msgb = new QMessageBox("", "All Files Are Sent", QMessageBox::NoIcon, QMessageBox::Ok, QMessageBox::NoButton, QMessageBox::NoButton);
+        msgb->exec();
+    }
 }
 

@@ -114,6 +114,7 @@ bool init_connect(Client*& client, const char* ip_addr, int port)
 
 bool start_send(Client*& client, const char* file_path, bool dir_flag)
 {
+    cout<<"file_path:"<<file_path<<endl;
     if(dir_flag)
     {
         char* file_info[100];
@@ -124,14 +125,14 @@ bool start_send(Client*& client, const char* file_path, bool dir_flag)
         }
         char* path_info = new char[10000];
         memset(path_info, 0, 10000 * sizeof(char));
-        int file_number=client->read_path(file_path, path_info, file_info);
-        cout<<path_info<<endl;
+        int file_number = 0;
+        client->read_path(file_path, path_info, file_info, file_number);
+        cout<<file_number<<endl;
         if(client->send_path_info(path_info))
         {
             int len = strlen(file_path) + 1;
             for(int i = 0; i < file_number; ++i)
             {
-                cout<<file_info[i] + len<<endl;
                 if(!client->send_file(file_info[i], len))
                     return false;
             }
