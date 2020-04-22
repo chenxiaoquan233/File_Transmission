@@ -11,7 +11,7 @@ Client::~Client()
 
 }
 
-int Client::send_cmd(char* cmd)
+int Client::send_cmd(const char* cmd)
 {
     int res = -1;
     cout<<cmd<<endl;
@@ -142,7 +142,12 @@ bool Client::sock_init(int* sock, int port, int is_cmd)
     struct timeval timeout;
     timeout.tv_sec = 5;
     timeout.tv_usec = 0;
+#ifdef _WIN32
+    if (setsockopt(*sock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout)) == -1)
+#endif
+#ifdef __linux__
     if (setsockopt(*sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) == -1)
+#endif
     {
         perror("setsockopt timeout failed:");
         return false;
@@ -171,7 +176,12 @@ bool Client::set_port(int* sock, int port, int is_cmd)
 bool Client::send_packet(int len)
 {
     int on=1;
+#ifdef _WIN32
+    if(setsockopt(*data_sock, SOL_SOCKET, SO_BROADCAST, (const char*)&on, sizeof(on)) < 0)
+#endif
+#ifdef __linux__
     if(setsockopt(*data_sock, SOL_SOCKET, SO_BROADCAST, &on, sizeof(on)) < 0)
+#endif
     {
         perror("broadcast");
         exit(0);
@@ -460,4 +470,50 @@ int* Client::get_cmd_sock()
 #endif
 {
     return &cmd_sock;
+}
+
+bool init_connect(Client*& client, const char* ip_addr, int port)
+{
+    client = new Client(ip_addr);
+    client->sock_init(client->get_cmd_sock(), port, 1);
+    client->send_cmd("ON");
+    char buf[1];
+    if(!client->recv_cmd(buf, 1, 500))
+        return false;
+    return !strcmp(buf, "1");
+}
+
+bool start_send(Client*& client, const char* file_path, bool dir_flag)
+{
+    cout<<"file_path:"<<file_path<<endl;
+    if(dir_flag)
+    {
+        char* file_info[100];
+        for (int i = 0; i < 100; i++)
+        {
+            file_info[i] = new char[1000];
+            memset(file_info[i], 0, 1000);
+        }
+        char* path_info = new char[10000];
+        memset(path_info, 0, 10000 * sizeof(char));
+        int file_number = 0;
+        client->read_path(file_path, path_info, file_info, file_number);
+        cout<<file_number<<endl;
+        if(client->send_path_info(path_info))
+        {
+            int len = strlen(file_path) + 1;
+            for(int i = 0; i < file_number; ++i)
+            {
+                if(!client->send_file(file_info[i], len))
+                    return false;
+            }
+        }
+        else return false;
+    }
+    else
+    {
+        if(!client->send_file(file_path, 0))
+            return false;
+    }
+    return true;
 }

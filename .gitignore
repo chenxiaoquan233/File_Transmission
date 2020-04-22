@@ -1,10 +1,6 @@
-/.vs
+.vs
 /x64
 /Debug
 .ilk
 .pdb
-.vscode/
-*.json
-build-File_Transmission-Desktop-Debug/
-.o
-.obj
+build-File_Transmission_win-Desktop_x86_windows_msvc2019_pe_32bit-Debug
