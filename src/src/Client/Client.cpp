@@ -477,7 +477,8 @@ bool init_connect(Client*& client, const char* ip_addr, int port)
     client = new Client(ip_addr);
     client->sock_init(client->get_cmd_sock(), port, 1);
     client->send_cmd("ON");
-    char buf[1];
+    char buf[5];
+    memset(buf, 0, 5 * sizeof(char));
     if(!client->recv_cmd(buf, 1, 500))
         return false;
     return !strcmp(buf, "1");
@@ -485,7 +486,6 @@ bool init_connect(Client*& client, const char* ip_addr, int port)
 
 bool start_send(Client*& client, const char* file_path, bool dir_flag)
 {
-    cout<<"file_path:"<<file_path<<endl;
     if(dir_flag)
     {
         char* file_info[100];
