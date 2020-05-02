@@ -5,7 +5,7 @@ class File
 private:
     const char* file_path = nullptr;
     FILE* file_ptr = nullptr;
-    int file_len = -1;
+    long long file_len = -1;
     int pkt_num = -1;
     bool* send_rec;
     int offset = -1;
@@ -22,7 +22,7 @@ public:
 
     //aquire a packet num which is not sent
     int get_pkt_num();
-    int get_file_len();
+    long long get_file_len();
     void set_file_len(int len);
     bool eof();
     FILE* get_file();

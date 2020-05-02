@@ -107,7 +107,7 @@ bool init_connect(Client*& client, const char* ip_addr, int port)
     client->sock_init(client->get_cmd_sock(), port, 1);
     client->send_cmd("ON");
     char buf[1];
-    if(!client->recv_cmd(buf, 1, 500))
+    if(!client->recv_cmd(buf, 1, 5000))
         return false;
     return !strcmp(buf, "1");
 }

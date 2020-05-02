@@ -42,7 +42,7 @@ bool Server::set_listen()
 	struct timeval timeout;
     timeout.tv_sec = 5;
     timeout.tv_usec = 0;
-    if (setsockopt(cmd_sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) == -1) 
+    if (setsockopt(cmd_sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout)) == -1) 
 	{
         perror("setsockopt timeout failed:");
 		return false;
@@ -100,13 +100,13 @@ bool Server::check_port()
 	struct timeval timeout;
     timeout.tv_sec = 5;
     timeout.tv_usec = 0;
-    if (setsockopt(data_sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) == -1) 
+    if (setsockopt(data_sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout)) == -1) 
 	{
         perror("setsockopt timeout failed!");
 		return false;
     }
 
-	char answer_port[10];
+	char answer_port[12];
 	sprintf(answer_port, "PORT %d", start_port);
 	
 	if(sendto(cmd_sock, answer_port, strlen(answer_port), 0, (struct sockaddr*) & serv_addr_cmd, sizeof(serv_addr_cmd)) < 0)
@@ -147,7 +147,7 @@ bool Server::recv_packet()
 		send_ack(pkt_num);
 		if(res < MAX_UDP_PACKET_LEN) break;// the last packet may not meet the max size
 	}
-
+	puts("recv");
 	data->set_slice_len(already_recv);
 
     return true;
@@ -163,16 +163,16 @@ bool Server::recv_whole_file()
 	int total_length; // the whole length of the received file
 
 	int slice_num = 0;
-	char* file_path = new char[50];
+	char* file_path = new char[200];
 	char* file_slice;
 	int data_len = 0;
-	char* file_name = new char[100];
+	char* file_name = new char[200];
 
 	while(!(file->eof()))
 	{
 		slice_num = 0;
 		data_len = 0;
-		memset(file_path, 0, 50 * sizeof(char));
+		memset(file_path, 0, 200 * sizeof(char));
 		file_slice = new char[MAX_PACKET_DATA_BYTE_LENGTH];
 
 		if(recv_packet())
@@ -241,7 +241,7 @@ bool Server::send_ack(int num)
 int Server::read_FILEinformation(FILE*& output_file, char* origin_data, int& data_length)
 {
     int info_length = 0;
-    char FILE_path[50];
+    char FILE_path[200];
     data_length = 0;
 	int tot = 0;
     while (origin_data[info_length] != '?') {
@@ -338,8 +338,8 @@ void Server::parse_param(char* src, char* path, int* slice_num, char* data, int 
 int Server::set_dir(char* path)
 {
 	int len = strlen(path);
-	char* tmpDirPath = new char[100];
-	memset(tmpDirPath, 0, 100);
+	char* tmpDirPath = new char[200];
+	memset(tmpDirPath, 0, 200);
 	#ifdef _WIN32
 	for (int i = 0; i < len; i++)
 	{
@@ -419,7 +419,8 @@ void Server::parse_cmd()
 
 	res = recvfrom(cmd_sock, cmd, 256 * sizeof(char), 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
 	if(res == -1) return;
-
+	puts("CMD:");
+puts(cmd);
 	if (cmd[0] == 'I' && cmd[1] == 'N' && cmd[2] == 'F' && cmd[3] == 'O')
 	{
 		if(check_port())
@@ -444,7 +445,7 @@ void Server::parse_cmd()
 		{
 			file_len *= 10, file_len += cmd[i++] - '0';
 		}
-		
+
 		char* send_file_name = new char[100];
 		memset(send_file_name, 0, 100);
 		sprintf(send_file_name, "%s/%s", path, file_name);
@@ -469,7 +470,7 @@ void Server::parse_cmd()
 
 bool Server::write_logfile(char* path, int number, int size)
 {
-	char logfile_path[50];
+	char logfile_path[200];
 	sprintf(logfile_path, "%s.FTlog", path);
 
 	FILE* logfile = fopen(logfile_path, "ab");
@@ -480,7 +481,7 @@ bool Server::write_logfile(char* path, int number, int size)
 
 bool Server::check_file(char* file_name, int file_len, int pkt_num) 
 {
-	char logfile_path[50];
+	char* logfile_path = new char[200];
 	sprintf(logfile_path, "%s.FTlog", file_name);
 	FILE* logfile;
 
@@ -501,12 +502,17 @@ bool Server::check_file(char* file_name, int file_len, int pkt_num)
 				
 			int total_loaded_pack_num = 0;
 			int temp = 0;
-			for (; !feof(logfile); total_loaded_pack_num++) 
+			while(!feof(logfile))
 			{
 				fread(&temp, sizeof(short), 1, logfile);
-				loaded_pack_num[temp] = true;
+				if(!loaded_pack_num[temp])
+				{
+					loaded_pack_num[temp] = true;
+					total_loaded_pack_num++;
+				}
 			}
 			int need_send = total_packet_num - total_loaded_pack_num;
+			printf("need_send:%d\n",need_send);
 			int *need_send_num = new int[need_send];
 			for (int i = 0, j = 0; i < total_packet_num; i++) 
 			{
@@ -516,8 +522,8 @@ bool Server::check_file(char* file_name, int file_len, int pkt_num)
 					j++;
 				}
 			}
-
-			char offset[3000];
+			
+			char* offset = new char[3000];
 			sprintf(offset, "OFFS %d", need_send);
 			for(int i = 0; i < need_send; ++i)
 				sprintf(offset, "%s %d", offset, need_send_num[i]);

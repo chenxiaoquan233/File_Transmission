@@ -1,6 +1,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
 #include "../include/file.h"
 
 File::File(const char* input_file, int _pkt_num)
@@ -40,7 +41,7 @@ int File::get_pkt_num()
     return 0;
 }
 
-int File::get_file_len()
+long long File::get_file_len()
 {
     return file_len;
 }
@@ -57,18 +58,22 @@ FILE* File::get_file()
 
 void File::cal_file_size()
 {
+    struct stat64 st;
+    stat64(file_path, &st );
+    file_len = st.st_size;
+
+    /*
     int length = 0;
-    FILE* fp;
-    fp = fopen(file_path, "rb");
-    if (fp == NULL)
+    FILE* fp = fopen(file_path, "rb");
+    if (fp == nullptr)
     {
         file_len =  -1;
         return;
     }
     fseek(fp, 0L, SEEK_END);
-    length = ftell(fp);
+    length = static_cast<int>(ftell(fp));
     fclose(fp);
-    file_len = length;
+    file_len = length;*/
 }
 
 void File::cal_offset()

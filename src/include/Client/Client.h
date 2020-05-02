@@ -70,7 +70,7 @@ public:
 
     int read_path(const char* path, char* path_info_buf, char** file_info_buf, int& file_num);
     
-	int send_cmd(char* cmd);
+    int send_cmd(const char* cmd);
 	
 	bool send_path_info(char* buffer);
 
