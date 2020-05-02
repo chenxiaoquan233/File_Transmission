@@ -147,9 +147,8 @@ bool Server::recv_packet()
 		send_ack(pkt_num);
 		if(res < MAX_UDP_PACKET_LEN) break;// the last packet may not meet the max size
 	}
-	puts("recv");
 	data->set_slice_len(already_recv);
-
+	cout<<already_recv<<endl;
     return true;
 }
 

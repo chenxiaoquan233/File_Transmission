@@ -2,7 +2,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <QFile>
+#include <iostream>
 #include "../include/file.h"
+
+using namespace std;
 
 File::File(const char* input_file, int _pkt_num)
 {
@@ -58,10 +62,17 @@ FILE* File::get_file()
 
 void File::cal_file_size()
 {
+#ifdef __linux__
     struct stat64 st;
     stat64(file_path, &st );
     file_len = st.st_size;
+#endif
 
+#ifdef _WIN32
+    struct __stat64 st;
+    __stat64(file_path, &st );
+    file_len = st.st_size;
+#endif
     /*
     int length = 0;
     FILE* fp = fopen(file_path, "rb");
