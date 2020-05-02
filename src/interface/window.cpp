@@ -9,6 +9,7 @@
 #include <QHeaderView>
 #include <QMessageBox>
 #include "window.h"
+#include "../include/Client/Client.h"
 
 Window::Window(QWidget *parent) : QDialog(parent)
 {

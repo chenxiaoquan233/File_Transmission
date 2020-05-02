@@ -100,6 +100,7 @@ int main(int argc, char** argv)
 
     return 0;
 }
+<<<<<<< HEAD
 
 bool init_connect(Client*& client, const char* ip_addr, int port)
 {
@@ -146,3 +147,5 @@ bool start_send(Client*& client, const char* file_path, bool dir_flag)
     }
     return true;
 }
+=======
+>>>>>>> 5224d57c8a488db4d2c07373d1cff1cabacc7d3d
