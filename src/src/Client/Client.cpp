@@ -35,7 +35,9 @@ int Client::recv_cmd(char* buf, int len, int usec)
         perror("setsockopt failed:");
     }
 
-    int res = recvfrom(cmd_sock, buf, len, 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
+    //int res = recvfrom(cmd_sock, buf, len, 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
+    int res = -1;
+    while(res==-1)res = recvfrom(cmd_sock, buf, len, 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
     return res;
 }
 
@@ -48,7 +50,7 @@ bool Client::send_file(const char* input_file_name, int path_offs)
         return false;
     }
 
-    sprintf(cmd, "SEND %s %d %ld", input_file_name + path_offs, file->get_tot_num(), file->get_file_len());
+    sprintf(cmd, "SEND %s %d %lld", input_file_name + path_offs, file->get_tot_num(), file->get_file_len());
     send_cmd(cmd);
     int offs = -1;
     offs = get_offset();
@@ -102,7 +104,10 @@ bool Client::read_file_slice(const char* input_file_name)
     fseek(file_ptr, file_offset, SEEK_SET);
 
     int header_offset = file->get_offset();
-    res = fread(data->get_file_slice() + header_offset, 1, MAX_PACKET_DATA_BYTE_LENGTH - header_offset, file_ptr);
+    
+    //res = fread(data->get_file_slice() + header_offset, 1, MAX_PACKET_DATA_BYTE_LENGTH - header_offset, file_ptr);
+    res = fread(data->get_file_slice() + header_len, 1, MAX_PACKET_DATA_BYTE_LENGTH - header_len, file_ptr);
+    
     data->set_slice_len(res + header_len);
     return res;
 }
@@ -212,8 +217,10 @@ int Client::get_offset()
     int nSize = sizeof(sockaddr);
     #endif
 
-    int recv_len = recvfrom(cmd_sock, buffer, 12, 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
-    if(recv_len == -1) return -1;
+    int recv_len = -1;
+    while(recv_len==-1)recv_len = recvfrom(cmd_sock, buffer, 12, 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
+    //int recv_len = recvfrom(cmd_sock, buffer, 12, 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
+    //if(recv_len == -1) return -1;
 
     if (buffer[0] != 'O' || buffer[1] != 'F' || buffer[2] != 'F' || buffer[3] != 'S') return -1;
     int value = 0;
@@ -247,10 +254,10 @@ int Client::get_offset()
                 tmp += buffer[tot] - '0';
                 ++tot; 
             }
-            need_rec[tmp - 1] = true;
+            need_rec[tmp] = true;
         }
         for(int i = 0; i < file->get_tot_num(); ++i)
-            if(!need_rec[tot_num])
+            if(!need_rec[i])
                 file->pkt_send(i);
     }
 
@@ -260,7 +267,7 @@ int Client::get_offset()
 int Client::get_port()
 {
     struct timeval timeout;
-    timeout.tv_sec = 10;
+    timeout.tv_sec = 15;
     timeout.tv_usec = 0;
     #ifdef __linux__
     if (setsockopt(cmd_sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) == -1)
@@ -278,8 +285,9 @@ int Client::get_port()
     int nSize = sizeof(sockaddr);
     #endif
 
-    if(recvfrom(cmd_sock, buffer, 12, 0, (struct sockaddr*) & serv_addr_cmd, &nSize) < 0)
-        return -1;
+    while (recvfrom(cmd_sock, buffer, 12, 0, (struct sockaddr*) & serv_addr_cmd, &nSize) == -1);
+    //if(recvfrom(cmd_sock, buffer, 12, 0, (struct sockaddr*) & serv_addr_cmd, &nSize) < 0)
+    //    return -1;
 
     if (buffer[0] != 'P' || buffer[1] != 'O' || buffer[2] != 'R' || buffer[3] != 'T')return -1;
     int value = 0;
@@ -313,8 +321,11 @@ bool Client::get_ack()
     #ifdef WIN32
 	int nSize = sizeof(sockaddr);
     #endif
-    if(recvfrom(cmd_sock, num_buffer, 4, 0, (struct sockaddr*)&serv_addr_cmd, &nSize) == -1)
-        return false;
+    
+    while(recvfrom(cmd_sock, num_buffer, 4, 0, (struct sockaddr*) & serv_addr_cmd, &nSize) == -1);
+
+    //if(recvfrom(cmd_sock, num_buffer, 4, 0, (struct sockaddr*)&serv_addr_cmd, &nSize) == -1)
+    //    return false;
 
     return atoi(num_buffer) == data->get_slice_num();
 }
@@ -449,7 +460,8 @@ bool Client::send_path_info(char* buffer)
                 #ifdef WIN32
                 int nSize = sizeof(sockaddr);
                 #endif
-                recvfrom(cmd_sock, ret, 64, 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
+                //recvfrom(cmd_sock, ret, 64, 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
+                while (recvfrom(cmd_sock, ret, 64, 0, (struct sockaddr*) & serv_addr_cmd, &nSize) == -1);
                 return !strcmp(ret, "INFO");
             }
             std::cout << "Transmission failed, retransmission limit reached" << std::endl;

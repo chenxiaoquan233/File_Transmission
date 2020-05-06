@@ -136,8 +136,12 @@ bool Server::recv_packet()
 	
 	while(already_recv < MAX_PACKET_DATA_BYTE_LENGTH)
 	{
-		int res = recvfrom(data_sock, data->get_file_slice() + already_recv, MAX_PACKET_DATA_BYTE_LENGTH, 0, (struct sockaddr*)&serv_addr_data, &nSize);
-		if(res < 0) return false;
+		//int res = recvfrom(data_sock, data->get_file_slice() + already_recv, MAX_PACKET_DATA_BYTE_LENGTH, 0, (struct sockaddr*)&serv_addr_data, &nSize);
+		//if(res < 0) return false;
+
+		int res=-1;
+		while(res==-1)
+		res = recvfrom(data_sock, data->get_file_slice() + already_recv, MAX_PACKET_DATA_BYTE_LENGTH, 0, (struct sockaddr*) & serv_addr_data, &nSize);
 
 		if(!already_recv)//the first packet of the file slice
 		{
@@ -384,8 +388,10 @@ bool Server::parse_path()
 	int nSize = sizeof(sockaddr);
 	#endif
 
-	if(recvfrom(data_sock, buf, 256 * sizeof(char), 0, (struct sockaddr*) & serv_addr_data, &nSize) < 0)
-		return false;
+	//if(recvfrom(data_sock, buf, 256 * sizeof(char), 0, (struct sockaddr*) & serv_addr_data, &nSize) < 0)
+	//	return false;
+
+	while (recvfrom(data_sock, buf, 256 * sizeof(char), 0, (struct sockaddr*) & serv_addr_data, &nSize) < 0);
 
 	int pos = 0;
 	while(pos < strlen(buf))
@@ -416,10 +422,11 @@ void Server::parse_cmd()
 
 	int res = -1;
 
-	res = recvfrom(cmd_sock, cmd, 256 * sizeof(char), 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
+	while(res==-1)res = recvfrom(cmd_sock, cmd, 256 * sizeof(char), 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
+	//res = recvfrom(cmd_sock, cmd, 256 * sizeof(char), 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
 	if(res == -1) return;
 	puts("CMD:");
-puts(cmd);
+    puts(cmd);
 	if (cmd[0] == 'I' && cmd[1] == 'N' && cmd[2] == 'F' && cmd[3] == 'O')
 	{
 		if(check_port())
@@ -520,6 +527,7 @@ bool Server::check_file(char* file_name, int file_len, int pkt_num)
 					need_send_num[j] = i;
 					j++;
 				}
+				else file->pkt_send(i);
 			}
 			
 			char* offset = new char[3000];

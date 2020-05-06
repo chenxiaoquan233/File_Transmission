@@ -35,20 +35,43 @@ bool parse_arg(int argc, char** argv)
 
 int main(int argc, char** argv)
 {
-    parse_arg(argc, argv);
-    Server* server = new Server(argv[2], atoi(argv[3]));
-	server->set_path(argv[1]);
-	if(server->set_listen())
+	if (argc==1)
 	{
-		while(1)
+		char bin[20] = "127.0.0.1";
+		char p[30] = "D://img/";
+		Server* server = new Server(bin, 12345);
+		server->set_path(p);
+		puts("listen");
+		if (server->set_listen())
 		{
-			puts("listen");
-			server->parse_cmd();
+
+			while (1)
+			{
+				server->parse_cmd();
+			}
+		}
+		else
+		{
+			puts("Inital Failed!\nPlease Check Your Port!");
 		}
 	}
-	else
-	{
-		puts("Inital Failed!\nPlease Check Your Port!");
+	else {
+
+		parse_arg(argc, argv);
+		Server* server = new Server(argv[2], atoi(argv[3]));
+		server->set_path(argv[1]);
+		puts("listen");
+		if (server->set_listen())
+		{
+
+			while (1)
+			{
+				server->parse_cmd();
+			}
+		}
+		else
+		{
+			puts("Inital Failed!\nPlease Check Your Port!");
+		}
 	}
-	
 }
