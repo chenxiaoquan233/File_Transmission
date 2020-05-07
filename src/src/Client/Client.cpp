@@ -194,15 +194,23 @@ bool Client::send_packet(int len)
     int already_send = 0;
     while(already_send < len)
     {
-        int send_len = getmin(len - already_send, MAX_UDP_PACKET_LEN);
-        int res=sendto(*data_sock, data->get_file_slice() + already_send, send_len, 0, (struct sockaddr*)&serv_addr_data, sizeof(serv_addr_data));
-        if(res == -1)
+        int send_time = 0;
+        int send_len;
+        while (1)
         {
-            perror("send");
-            exit(0);
+            send_len = getmin(len - already_send, MAX_UDP_PACKET_LEN);
+            int res = sendto(*data_sock, data->get_file_slice() + already_send, send_len, 0, (struct sockaddr*) & serv_addr_data, sizeof(serv_addr_data));
+            if (res == -1)
+            {
+                perror("send");
+                exit(0);
+            }
+            if (get_ack())break;
+
+            ++send_time;
+            if (send_time > MAX_SEND_TIMES)return false;
         }
         already_send += send_len;
-        if(!get_ack()) return false;
     }
     return true;
 }
@@ -322,12 +330,21 @@ bool Client::get_ack()
 	int nSize = sizeof(sockaddr);
     #endif
     
-    while(recvfrom(cmd_sock, num_buffer, 4, 0, (struct sockaddr*) & serv_addr_cmd, &nSize) == -1);
 
+    for (int i = 0; i < MAX_RECV_TIMES; i++)
+    {
+        if (recvfrom(cmd_sock, num_buffer, 4, 0, (struct sockaddr*) & serv_addr_cmd, &nSize) != -1)
+            return atoi(num_buffer) == data->get_slice_num();
+    }
+    return false;
+
+    //while(recvfrom(cmd_sock, num_buffer, 4, 0, (struct sockaddr*) & serv_addr_cmd, &nSize) == -1);
+
+    
     //if(recvfrom(cmd_sock, num_buffer, 4, 0, (struct sockaddr*)&serv_addr_cmd, &nSize) == -1)
     //    return false;
 
-    return atoi(num_buffer) == data->get_slice_num();
+   
 }
 
 int Client::read_path(const char* path, char* path_info_buf, char** file_info_buf, int& file_num)

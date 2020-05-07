@@ -139,9 +139,14 @@ bool Server::recv_packet()
 		//int res = recvfrom(data_sock, data->get_file_slice() + already_recv, MAX_PACKET_DATA_BYTE_LENGTH, 0, (struct sockaddr*)&serv_addr_data, &nSize);
 		//if(res < 0) return false;
 
-		int res=-1;
-		while(res==-1)
-		res = recvfrom(data_sock, data->get_file_slice() + already_recv, MAX_PACKET_DATA_BYTE_LENGTH, 0, (struct sockaddr*) & serv_addr_data, &nSize);
+		bool flg = 0;
+		int res = -1;
+		for (int i = 0; i < MAX_RECV_TIMES; i++)
+		{
+			res = recvfrom(data_sock, data->get_file_slice() + already_recv, MAX_PACKET_DATA_BYTE_LENGTH, 0, (struct sockaddr*) & serv_addr_data, &nSize);
+			if (res != -1) { flg = 1; break; }
+		}
+		if (!flg)return false;
 
 		if(!already_recv)//the first packet of the file slice
 		{
@@ -187,7 +192,7 @@ bool Server::recv_whole_file()
 			file->pkt_send(slice_num - 1);
 
 			// record on log
-			write_logfile(file_path, (short)slice_num, sizeof(short));
+			//write_logfile(file_path, (short)slice_num, sizeof(short));
 
 			// write file slice
 			sprintf(file_name, "%s/%s.%03d", path, file_path, slice_num);
@@ -458,8 +463,8 @@ void Server::parse_cmd()
 		file = new File(send_file_name, tot_pkt_num);
 		if(!check_file(send_file_name, file_len, tot_pkt_num)) 
 		{
-			write_logfile(send_file_name, (short)tot_pkt_num, sizeof(short));
-			write_logfile(send_file_name, file_len, sizeof(int));
+			//write_logfile(send_file_name, (short)tot_pkt_num, sizeof(short));
+			//write_logfile(send_file_name, file_len, sizeof(int));
 		}
 	}
 	else if (cmd[0] == 'P' && cmd[1] == 'O' && cmd[2] == 'R' && cmd[3] == 'T')
@@ -487,6 +492,7 @@ bool Server::write_logfile(char* path, int number, int size)
 
 bool Server::check_file(char* file_name, int file_len, int pkt_num) 
 {
+	/*
 	char* logfile_path = new char[200];
 	sprintf(logfile_path, "%s.FTlog", file_name);
 	FILE* logfile;
@@ -546,6 +552,71 @@ bool Server::check_file(char* file_name, int file_len, int pkt_num)
 	sendto(cmd_sock, offset, strlen(offset), 0,(struct sockaddr*) & serv_addr_cmd, sizeof(serv_addr_cmd));
 	remove(logfile_path);
 	return false;
+	*/
+
+
+	bool* loaded_pack_num = new bool[pkt_num];
+	for (int i = 0; i < pkt_num; i++)
+		loaded_pack_num[i] = false;
+	char* logfile_path = new char[200];
+	int total_loaded_pack_num = 0;
+
+	sprintf(logfile_path, "%s", file_name);
+	
+#ifdef __linux__
+	if (access(logfile_path, 0) == 0)
+#endif
+#ifdef WIN32
+	if (_access(logfile_path, 0) == 0)
+#endif
+	{
+		for (int i = 0; i < pkt_num; i++)
+		{
+			if (!loaded_pack_num[i])loaded_pack_num[i] = true, ++total_loaded_pack_num;
+		}
+	}
+	for (int i = 0; i < pkt_num; i++)
+	{
+		sprintf(logfile_path, "%s.%03d", file_name,i+1);
+#ifdef __linux__
+		    if (access(logfile_path, 0) == 0)
+#endif
+#ifdef WIN32
+			if (_access(logfile_path, 0) == 0)
+#endif
+		{
+			if (!loaded_pack_num[i])loaded_pack_num[i] = true, ++total_loaded_pack_num;
+		}
+	}
+	if (!total_loaded_pack_num)
+	{
+		char offset[256];
+		sprintf(offset, "OFFS %d", pkt_num);
+		sendto(cmd_sock, offset, strlen(offset), 0, (struct sockaddr*) & serv_addr_cmd, sizeof(serv_addr_cmd));
+		remove(logfile_path);
+		return false;
+	}
+	int need_send = pkt_num - total_loaded_pack_num;
+	printf("need_send:%d\n", need_send);
+	int* need_send_num = new int[need_send];
+	for (int i = 0, j = 0; i < pkt_num; i++)
+	{
+		if (loaded_pack_num[i] == false)
+		{
+			need_send_num[j] = i;
+			j++;
+		}
+		else file->pkt_send(i);
+	}
+	char* offset = new char[3000];
+	sprintf(offset, "OFFS %d", need_send);
+	for (int i = 0; i < need_send; ++i)
+		sprintf(offset, "%s %d", offset, need_send_num[i]);
+	if (sendto(cmd_sock, offset, strlen(offset), 0, (struct sockaddr*) & serv_addr_cmd, sizeof(serv_addr_cmd)) < 0)
+		perror("offset");
+	delete(need_send_num);
+	return true;
+
 }
 
 void mergeFile(char* fileaddress, int package)
@@ -571,7 +642,7 @@ void mergeFile(char* fileaddress, int package)
 		puts(buffaddress);
 		if ((src = fopen(buffaddress, "rb")) == NULL)
 		{
-			puts("file not exists"); return;
+			puts("file not existss"); return;
 		}
 		char sub;
 
