@@ -209,7 +209,7 @@ bool Client::send_packet(int len)
 
 int Client::get_offset()
 {
-    char buffer[3000];
+    char buffer[1200];
     #ifdef __linux__
     socklen_t nSize = sizeof(sockaddr);
     #endif
@@ -218,8 +218,8 @@ int Client::get_offset()
     #endif
 
     int recv_len = -1;
-    while(recv_len==-1)recv_len = recvfrom(cmd_sock, buffer, 12, 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
-    //int recv_len = recvfrom(cmd_sock, buffer, 12, 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
+    while(recv_len==-1)recv_len = recvfrom(cmd_sock, buffer, 1200, 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
+    //int recv_len = recvfrom(cmd_sock, buffer, 1200, 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
     //if(recv_len == -1) return -1;
 
     if (buffer[0] != 'O' || buffer[1] != 'F' || buffer[2] != 'F' || buffer[3] != 'S') return -1;
