@@ -175,7 +175,7 @@ bool Server::recv_whole_file()
 	char* file_slice;
 	int data_len = 0;
 	char* file_name = new char[200];
-
+	bool checked = 0;
 	while(!(file->eof()))
 	{
 		slice_num = 0;
@@ -196,7 +196,8 @@ bool Server::recv_whole_file()
 
 			// write file slice
 			sprintf(file_name, "%s/%s.%03d", path, file_path, slice_num);
-
+			checked = 1;
+			brute_create_folder(file_name);
 			FILE* output_file_slice = fopen(file_name, "wb");
 			fwrite(file_slice, 1, data_len, output_file_slice);
 			fclose(output_file_slice);
@@ -211,11 +212,13 @@ bool Server::recv_whole_file()
 	end_t = clock();
 	printf("recv time: %f\n", ((double)(end_t - start_t) / CLOCKS_PER_SEC));
 
-	sprintf(file_name, "%s/%s", path, file_path);
-	puts(file_name);
-	thread* new_thread = new thread(mergeFile, file_name, slice_num);
-	threads.push_back(new_thread);
-
+	if (checked)
+	{
+		sprintf(file_name, "%s/%s", path, file_path);
+		puts(file_name);
+		thread* new_thread = new thread(mergeFile, file_name, slice_num);
+		threads.push_back(new_thread);
+	}
 	return true;
 }
 
@@ -677,4 +680,24 @@ int Server::get_ack(char* data)
 void Server::set_path(char* path)
 {
 	this->path = path;
+}
+void brute_create_folder(string a)
+{
+	string b = a;
+	while (b.back() != '/')b.pop_back();
+	b.pop_back();
+	
+#ifdef WIN32
+	if (_access(b.c_str(), 0) == 0)return;
+#endif
+#ifdef __linux__
+	if (access(b.c_str(), 0) == 0)return;
+#endif
+	brute_create_folder(b);
+#ifdef WIN32
+	_mkdir(b.c_str());
+#endif
+#ifdef __linux__
+	mkdir(b.c_str());
+#endif
 }
