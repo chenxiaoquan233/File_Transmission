@@ -141,7 +141,7 @@ bool Server::recv_packet()
 
 		bool flg = 0;
 		int res = -1;
-		for (int i = 0; i < MAX_RECV_TIMES; i++)
+		for (int i = 0; i < SEND_FREQ; i++)
 		{
 			res = recvfrom(data_sock, data->get_file_slice() + already_recv, MAX_PACKET_DATA_BYTE_LENGTH, 0, (struct sockaddr*) & serv_addr_data, &nSize);
 			if (res != -1) { flg = 1; break; }
