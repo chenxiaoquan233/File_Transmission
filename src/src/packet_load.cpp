@@ -6,6 +6,7 @@ pkt_load::pkt_load()
 
 pkt_load::~pkt_load()
 {
+	delete[]file_slice;
 }
 
 char* pkt_load::get_file_slice()

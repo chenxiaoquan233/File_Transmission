@@ -103,9 +103,13 @@ int main(int argc, char** argv)
 bool init_connect(Client*& client, const char* ip_addr, int port)
 {
     client = new Client(ip_addr);
+
     client->sock_init(client->get_cmd_sock(), port, 1);
     client->send_cmd("ON");
-    char buf[1];
+
+    char buf[2];
+	memset(buf, 0, 2 * sizeof(char));
+
     if(!client->recv_cmd(buf, 1, 5000))
         return false;
     return !strcmp(buf, "1");
@@ -116,8 +120,8 @@ bool start_send(Client*& client, const char* file_path, bool dir_flag)
     cout<<"file_path:"<<file_path<<endl;
     if(dir_flag)
     {
-        char* file_info[100];
-        for (int i = 0; i < 100; i++)
+        char* file_info[1000];
+        for (int i = 0; i < 1000; i++)
         {
             file_info[i] = new char[1000];
             memset(file_info[i], 0, 1000);
@@ -125,10 +129,11 @@ bool start_send(Client*& client, const char* file_path, bool dir_flag)
         char* path_info = new char[10000];
         memset(path_info, 0, 10000 * sizeof(char));
         int file_number = 0;
-        client->read_path(file_path, path_info, file_info, file_number);
+        client->read_path(file_path, path_info, file_info, file_number, strlen(file_path) + 3);
         cout<<file_number<<endl;
         if(client->send_path_info(path_info))
         {
+			cout << "start send " << file_number << " files" << endl;
             int len = strlen(file_path) + 1;
             for(int i = 0; i < file_number; ++i)
             {

@@ -68,7 +68,7 @@ public:
 	//rev port id from server
 	int get_port();
 
-    int read_path(const char* path, char* path_info_buf, char** file_info_buf, int& file_num);
+    int read_path(const char* path, char* path_info_buf, char** file_info_buf, int& file_num, const int abs_path_offs);
     
     int send_cmd(const char* cmd);
 	

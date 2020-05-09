@@ -38,8 +38,8 @@ int main(int argc, char** argv)
 	if (argc==1)
 	{
 		char bin[20] = "127.0.0.1";
-		char p[30] = "D://img/";
-		Server* server = new Server(bin, 12345);
+		char p[30] = "C://test/test/";
+		Server* server = new Server(bin, 8080);
 		server->set_path(p);
 		puts("listen");
 		if (server->set_listen())

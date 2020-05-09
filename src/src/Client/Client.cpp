@@ -28,28 +28,35 @@ int Client::recv_cmd(char* buf, int len, int usec)
     int nSize = sizeof(sockaddr);
     #endif
 
-    struct timeval timeout;
-    timeout.tv_sec = usec / 1000;
-    timeout.tv_usec = usec % 1000;
-    if (setsockopt(cmd_sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout)) == -1) {
+	#ifdef __linux__
+	struct timeval timeout;
+	timeout.tv_sec = usec / 1000;
+	timeout.tv_usec = usec % 1000;
+    if (setsockopt(cmd_sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout)) == -1) 
+	#endif
+	#ifdef WIN32
+	if (setsockopt(cmd_sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&usec, sizeof(usec)) == -1)
+	#endif
+	{
         perror("setsockopt failed:");
+		return -1;
     }
 
-    //int res = recvfrom(cmd_sock, buf, len, 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
-    int res = -1;
-    while(res==-1)res = recvfrom(cmd_sock, buf, len, 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
+    int res = recvfrom(cmd_sock, buf, len, 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
+    /*int res = -1;
+    while(res==-1) res = recvfrom(cmd_sock, buf, len, 0, (struct sockaddr*) & serv_addr_cmd, &nSize);*/
     return res;
 }
 
 bool Client::send_file(const char* input_file_name, int path_offs)
 {
     file = new File(input_file_name, MAX_PACKET_DATA_BYTE_LENGTH, 0);
-    char* cmd;
-    if ((cmd = (char*)malloc(sizeof(char) * MAX_PACKET_DATA_BYTE_LENGTH)) == nullptr)
+    char* cmd = nullptr;
+	cmd = new char[MAX_PACKET_DATA_BYTE_LENGTH];
+    while (cmd == nullptr)
     {
-        return false;
+		cmd = new char[MAX_PACKET_DATA_BYTE_LENGTH];
     }
-
     sprintf(cmd, "SEND %s %d %lld", input_file_name + path_offs, file->get_tot_num(), file->get_file_len());
     send_cmd(cmd);
     int offs = -1;
@@ -60,6 +67,7 @@ bool Client::send_file(const char* input_file_name, int path_offs)
     send_cmd(cmd);
     int port = -1;
     port = get_port();
+	cout << "port:" << port << endl;
     if(port == -1) return false;
 
     #ifdef _WIN32
@@ -79,7 +87,7 @@ bool Client::send_file(const char* input_file_name, int path_offs)
         if(!send_packet(slice_len)) return false;
         file->pkt_send(data->get_slice_num() - 1);
     }
-
+	delete []cmd;
     return true;
 }
 
@@ -196,8 +204,8 @@ bool Client::send_packet(int len)
     {
         int send_time = 0;
         int send_len;
-        while (1)
-        {
+        //while (1)
+        //{
             send_len = getmin(len - already_send, MAX_UDP_PACKET_LEN);
             int res = sendto(*data_sock, data->get_file_slice() + already_send, send_len, 0, (struct sockaddr*) & serv_addr_data, sizeof(serv_addr_data));
             if (res == -1)
@@ -205,11 +213,11 @@ bool Client::send_packet(int len)
                 perror("send");
                 exit(0);
             }
-            if (get_ack())break;
-
-            ++send_time;
-            if (send_time > MAX_SEND_TIMES)return false;
-        }
+            //if (get_ack()) break;
+			if (!get_ack()) return false;
+            //++send_time;
+            //if (send_time > SEND_FREQ)return false;
+        //}
         already_send += send_len;
     }
     return true;
@@ -218,15 +226,17 @@ bool Client::send_packet(int len)
 int Client::get_offset()
 {
     char buffer[1200];
-    #ifdef __linux__
+    /*#ifdef __linux__
     socklen_t nSize = sizeof(sockaddr);
     #endif
     #ifdef WIN32
     int nSize = sizeof(sockaddr);
-    #endif
+    #endif*/
 
     int recv_len = -1;
-    while(recv_len==-1)recv_len = recvfrom(cmd_sock, buffer, 1200, 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
+	recv_len = recv_cmd(buffer, 1200, 5000);
+
+    //while(recv_len==-1)recv_len = recvfrom(cmd_sock, buffer, 1200, 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
     //int recv_len = recvfrom(cmd_sock, buffer, 1200, 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
     //if(recv_len == -1) return -1;
 
@@ -247,7 +257,7 @@ int Client::get_offset()
     if(value != tot_num)
     {
         bool* need_rec=new bool[tot_num];
-        memset(need_rec, 0, sizeof(need_rec));
+        memset(need_rec, 0, tot_num * sizeof(bool));
 
         while(tot < recv_len)
         {
@@ -267,6 +277,8 @@ int Client::get_offset()
         for(int i = 0; i < file->get_tot_num(); ++i)
             if(!need_rec[i])
                 file->pkt_send(i);
+
+		delete[]need_rec;
     }
 
     return value;
@@ -274,7 +286,7 @@ int Client::get_offset()
 
 int Client::get_port()
 {
-    struct timeval timeout;
+    /*struct timeval timeout;
     timeout.tv_sec = 15;
     timeout.tv_usec = 0;
     #ifdef __linux__
@@ -286,6 +298,7 @@ int Client::get_port()
         return -1;
     #endif
     char buffer[12];
+	memset(buffer, 0, 12 * sizeof(char));
     #ifdef __linux__
     socklen_t nSize = sizeof(sockaddr);
     #endif
@@ -295,7 +308,12 @@ int Client::get_port()
 
     while (recvfrom(cmd_sock, buffer, 12, 0, (struct sockaddr*) & serv_addr_cmd, &nSize) == -1);
     //if(recvfrom(cmd_sock, buffer, 12, 0, (struct sockaddr*) & serv_addr_cmd, &nSize) < 0)
-    //    return -1;
+    //    return -1;*/
+
+	char buffer[12];
+	memset(buffer, 0, 12 * sizeof(char));
+	recv_cmd(buffer, 12, 5000);
+
 
     if (buffer[0] != 'P' || buffer[1] != 'O' || buffer[2] != 'R' || buffer[3] != 'T')return -1;
     int value = 0;
@@ -307,7 +325,7 @@ int Client::get_port()
 
 bool Client::get_ack()
 {
-    struct timeval timeout;
+    /*struct timeval timeout;
     timeout.tv_sec = 15;
     timeout.tv_usec = 0;
 
@@ -319,10 +337,18 @@ bool Client::get_ack()
 	if (setsockopt(cmd_sock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout)) == -1)
 		return false;
     #endif
-
+	*/
     char num_buffer[4];
     memset(num_buffer, 0, sizeof(num_buffer));
 
+	/*for (int i = 0; i < SEND_FREQ; i++)
+	{*/
+	if (recv_cmd(num_buffer, 4, 5000))
+		return atoi(num_buffer) == data->get_slice_num();
+	else return false;
+	//}
+
+	/*
     #ifdef __linux__
     socklen_t nSize = sizeof(sockaddr);
     #endif
@@ -331,12 +357,14 @@ bool Client::get_ack()
     #endif
     
 
-    for (int i = 0; i < MAX_RECV_TIMES; i++)
+    for (int i = 0; i < SEND_FREQ; i++)
     {
         if (recvfrom(cmd_sock, num_buffer, 4, 0, (struct sockaddr*) & serv_addr_cmd, &nSize) != -1)
             return atoi(num_buffer) == data->get_slice_num();
     }
-    return false;
+    return false;*/
+
+
 
     //while(recvfrom(cmd_sock, num_buffer, 4, 0, (struct sockaddr*) & serv_addr_cmd, &nSize) == -1);
 
@@ -347,7 +375,7 @@ bool Client::get_ack()
    
 }
 
-int Client::read_path(const char* path, char* path_info_buf, char** file_info_buf, int& file_num)
+int Client::read_path(const char* path, char* path_info_buf, char** file_info_buf, int& file_num, const int abs_path_offs)
 {
     #ifdef WIN32
     intptr_t handle;
@@ -370,8 +398,8 @@ int Client::read_path(const char* path, char* path_info_buf, char** file_info_bu
             std::string standardization(subdir);
             standardization.insert(0, "d ");
             standardization += "\n";
-            sprintf(path_info_buf, "%s%s", path_info_buf, standardization.c_str());
-            read_path(subdir.c_str(), path_info_buf, file_info_buf, file_num);
+            sprintf(path_info_buf, "%s%s", path_info_buf, standardization.c_str() + abs_path_offs);
+            read_path(subdir.c_str(), path_info_buf, file_info_buf, file_num, abs_path_offs);
         }
         else if (strcmp(findData.name, ".") != 0 && strcmp(findData.name, "..") != 0)
         {
@@ -419,7 +447,7 @@ int Client::read_path(const char* path, char* path_info_buf, char** file_info_bu
         }
     }
     #endif
-
+	delete[]dir;
     return file_num;
 }
 
@@ -478,7 +506,8 @@ bool Client::send_path_info(char* buffer)
                 int nSize = sizeof(sockaddr);
                 #endif
                 //recvfrom(cmd_sock, ret, 64, 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
-                while (recvfrom(cmd_sock, ret, 64, 0, (struct sockaddr*) & serv_addr_cmd, &nSize) == -1);
+				recv_cmd(ret, 64, 5000);
+                //while (recvfrom(cmd_sock, ret, 64, 0, (struct sockaddr*) & serv_addr_cmd, &nSize) == -1);
                 return !strcmp(ret, "INFO");
             }
             std::cout << "Transmission failed, retransmission limit reached" << std::endl;

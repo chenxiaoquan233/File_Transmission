@@ -236,14 +236,16 @@ void Window::try_send()
     else
     {
         QString dir = directoryComboBox->currentText();
+		qDebug() << dir << endl;
         if(dir.length() > 0)
         {
-            if(!start_send(client, dir.toStdString().c_str(), 1))
+            if(!start_send(client, string(dir.toLocal8Bit()).c_str(), 1))
             {
                 connectStatusLabel->setText("not connected");
                 connect_status = false;
                 QMessageBox* msgb = new QMessageBox("", "Connect Interrupted!", QMessageBox::Warning, QMessageBox::Ok, QMessageBox::NoButton, QMessageBox::NoButton);
                 msgb->exec();
+				return;
             }
         }
         QMessageBox* msgb = new QMessageBox("", "All Files Are Sent", QMessageBox::NoIcon, QMessageBox::Ok, QMessageBox::NoButton, QMessageBox::NoButton);
