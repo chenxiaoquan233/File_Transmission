@@ -74,6 +74,8 @@ public:
 	
 	bool send_path_info(char* buffer);
 
+	bool set_data_port();
+
 	#ifdef _WIN32
 	SOCKET* get_cmd_sock();
 	#endif

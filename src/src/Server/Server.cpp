@@ -98,10 +98,16 @@ bool Server::check_port()
 	}
 	#endif
 
+#ifdef __linux__
 	struct timeval timeout;
     timeout.tv_sec = 5;
     timeout.tv_usec = 0;
-    if (setsockopt(data_sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout)) == -1) 
+	if (setsockopt(data_sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout)) == -1)
+#endif
+#ifdef WIN32
+	int timeout = 10000;
+	if (setsockopt(data_sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout)) == -1)
+#endif
 	{
         perror("setsockopt timeout failed!");
 		return false;
@@ -477,11 +483,13 @@ void Server::parse_cmd()
 			//write_logfile(send_file_name, (short)tot_pkt_num, sizeof(short));
 			//write_logfile(send_file_name, file_len, sizeof(int));
 		}
+		recv_whole_file();
 	}
 	else if (cmd[0] == 'P' && cmd[1] == 'O' && cmd[2] == 'R' && cmd[3] == 'T')
 	{
-		if(check_port())
-			recv_whole_file();
+		check_port();
+		//if(check_port())
+			//recv_whole_file();
 	}
 	else if (cmd[0] == 'O' && cmd[1] == 'N')
 	{

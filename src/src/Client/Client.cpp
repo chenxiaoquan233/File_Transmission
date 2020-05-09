@@ -63,21 +63,6 @@ bool Client::send_file(const char* input_file_name, int path_offs)
     offs = get_offset();
     if(offs == -1) return false;
 
-    sprintf(cmd, "PORT");
-    send_cmd(cmd);
-    int port = -1;
-    port = get_port();
-	cout << "port:" << port << endl;
-    if(port == -1) return false;
-
-    #ifdef _WIN32
-    data_sock = new SOCKET;
-    #endif
-    #ifdef __linux__
-    data_sock = new int;
-    #endif
-    sock_init(data_sock, port, 0);
-
     file->get_send_rec();
 
     while (!file->eof())
@@ -343,7 +328,7 @@ bool Client::get_ack()
 
 	/*for (int i = 0; i < SEND_FREQ; i++)
 	{*/
-	if (recv_cmd(num_buffer, 4, 5000))
+	if (recv_cmd(num_buffer, 4, 10000))
 		return atoi(num_buffer) == data->get_slice_num();
 	else return false;
 	//}
@@ -575,3 +560,30 @@ bool start_send(Client*& client, const char* file_path, bool dir_flag)
     }
     return true;
 }*/
+
+bool Client::set_data_port()
+{
+	char* cmd = nullptr;
+	cmd = new char[MAX_PACKET_DATA_BYTE_LENGTH];
+	while (cmd == nullptr)
+	{
+		cmd = new char[MAX_PACKET_DATA_BYTE_LENGTH];
+	}
+
+	sprintf(cmd, "PORT");
+	send_cmd(cmd);
+	int port = -1;
+	port = get_port();
+	if (port == -1) return false;
+
+#ifdef _WIN32
+	data_sock = new SOCKET;
+#endif
+#ifdef __linux__
+	data_sock = new int;
+#endif
+	sock_init(data_sock, port, 0);
+
+	delete[]cmd;
+	return true;
+}

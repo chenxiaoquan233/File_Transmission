@@ -210,6 +210,7 @@ void Window::initFilesTable()
 
 void Window::try_connect()
 {
+	success = false;
     QString ip_addr = ipaddrComboBox->currentText();
     QString port = portComboBox->currentText();
     connect_status = init_connect(ref(client), ip_addr.toStdString().c_str(), port.toInt());
@@ -224,6 +225,25 @@ void Window::try_connect()
         QMessageBox* msgb = new QMessageBox("", "Connect Failed!", QMessageBox::Warning, QMessageBox::Ok, QMessageBox::NoButton, QMessageBox::NoButton);
         msgb->exec();
     }
+}
+
+void Window::re_connect()
+{
+	success = false;
+	QString ip_addr = ipaddrComboBox->currentText();
+	QString port = portComboBox->currentText();
+	connect_status = init_connect(ref(client), ip_addr.toStdString().c_str(), port.toInt());
+	if (connect_status)
+	{
+		connectStatusLabel->setText("Connected");
+		QMessageBox* msgb = new QMessageBox("", "Reconnect Success!", QMessageBox::NoIcon, QMessageBox::Ok, QMessageBox::NoButton, QMessageBox::NoButton);
+		msgb->exec();
+	}
+	else
+	{
+		QMessageBox* msgb = new QMessageBox("", "Reconnect Failed!", QMessageBox::Warning, QMessageBox::Ok, QMessageBox::NoButton, QMessageBox::NoButton);
+		msgb->exec();
+	}
 }
 
 void Window::try_send()
@@ -241,15 +261,36 @@ void Window::try_send()
         {
             if(!start_send(client, string(dir.toLocal8Bit()).c_str(), 1))
             {
-                connectStatusLabel->setText("not connected");
-                connect_status = false;
-                QMessageBox* msgb = new QMessageBox("", "Connect Interrupted!", QMessageBox::Warning, QMessageBox::Ok, QMessageBox::NoButton, QMessageBox::NoButton);
-                msgb->exec();
-				return;
+				connectStatusLabel->setText("not connected");
+				if (layer == 0) 
+				{
+					for (int i = 0; i < 5; ++i)
+					{
+						re_connect();
+						layer++;
+						try_send();
+						if (success)
+						{
+							layer--;
+							return;
+						}
+					}
+				}
+				if (!success) 
+				{
+					connectStatusLabel->setText("not connected");
+					connect_status = false;
+					QMessageBox* msgb = new QMessageBox("", "Connect Interrupted!", QMessageBox::Warning, QMessageBox::Ok, QMessageBox::NoButton, QMessageBox::NoButton);
+					msgb->exec();
+					if(layer > 0) layer--;
+					return;
+				}
             }
         }
+		success = true;
         QMessageBox* msgb = new QMessageBox("", "All Files Are Sent", QMessageBox::NoIcon, QMessageBox::Ok, QMessageBox::NoButton, QMessageBox::NoButton);
         msgb->exec();
+		if (layer > 0) layer--;
     }
 }
 

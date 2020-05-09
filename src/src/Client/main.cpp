@@ -118,6 +118,7 @@ bool init_connect(Client*& client, const char* ip_addr, int port)
 bool start_send(Client*& client, const char* file_path, bool dir_flag)
 {
     cout<<"file_path:"<<file_path<<endl;
+	client->set_data_port();
     if(dir_flag)
     {
         char* file_info[1000];

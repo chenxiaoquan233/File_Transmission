@@ -34,7 +34,10 @@ private:
     QPushButton *connectButton;
     QTableWidget *filesTable;
     QStringList FileBs = {"B", "KB", "MB", "GB", "TB"};
+	bool success = false;
+	int layer = 0;
 
+	void re_connect();
     void initFilesTable();
     void showDirs(const QDir &directory,const QStringList &dirs, int layers);
     void showFiles(const QDir &directory,const QStringList &files, int layers);
