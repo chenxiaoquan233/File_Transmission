@@ -63,7 +63,6 @@ int main(int argc, char** argv)
 		puts("listen");
 		if (server->set_listen())
 		{
-
 			while (1)
 			{
 				server->parse_cmd();

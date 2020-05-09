@@ -8,43 +8,20 @@ Client::Client(const char* ip_addr)
 
 Client::~Client()
 {
-
+    closesocket(this->cmd_sock);
 }
 
 int Client::send_cmd(const char* cmd)
 {
     int res = -1;
     cout<<cmd<<endl;
-    res = sendto(cmd_sock, cmd, strlen(cmd), 0, (struct sockaddr*)(&serv_addr_cmd), sizeof(serv_addr_cmd));
+    res = send(cmd_sock, cmd, strlen(cmd), 0);
     return res;
 }
 
 int Client::recv_cmd(char* buf, int len, int usec)
 {
-    #ifdef __linux__
-    socklen_t nSize = sizeof(sockaddr);
-    #endif
-    #ifdef WIN32
-    int nSize = sizeof(sockaddr);
-    #endif
-
-	#ifdef __linux__
-	struct timeval timeout;
-	timeout.tv_sec = usec / 1000;
-	timeout.tv_usec = usec % 1000;
-    if (setsockopt(cmd_sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout)) == -1) 
-	#endif
-	#ifdef WIN32
-	if (setsockopt(cmd_sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&usec, sizeof(usec)) == -1)
-	#endif
-	{
-        perror("setsockopt failed:");
-		return -1;
-    }
-
-    int res = recvfrom(cmd_sock, buf, len, 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
-    /*int res = -1;
-    while(res==-1) res = recvfrom(cmd_sock, buf, len, 0, (struct sockaddr*) & serv_addr_cmd, &nSize);*/
+    int res = recv(cmd_sock, buf, len, 0);
     return res;
 }
 
@@ -116,11 +93,11 @@ bool Client::sock_init(int* sock, int port, int is_cmd)
 #ifdef _WIN32
     WSADATA wsaData;
     WSAStartup(MAKEWORD(2, 2), &wsaData);
-    *sock = socket(AF_INET, SOCK_DGRAM, 0);
+    *sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 #endif
 
 #ifdef __linux__
-    *sock = socket(AF_INET, SOCK_DGRAM, 0);
+    *sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 #endif
 
     if (is_cmd)
@@ -137,21 +114,6 @@ bool Client::sock_init(int* sock, int port, int is_cmd)
         serv_addr_data.sin_addr.s_addr = inet_addr(ip_addr);
         serv_addr_data.sin_port = htons(port);
     }
-
-    struct timeval timeout;
-    timeout.tv_sec = 5;
-    timeout.tv_usec = 0;
-#ifdef _WIN32
-    if (setsockopt(*sock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout)) == -1)
-#endif
-#ifdef __linux__
-    if (setsockopt(*sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) == -1)
-#endif
-    {
-        perror("setsockopt timeout failed:");
-        return false;
-    }
-
     return set_port(sock, port, is_cmd);
 }
 
@@ -174,36 +136,22 @@ bool Client::set_port(int* sock, int port, int is_cmd)
 }
 bool Client::send_packet(int len)
 {
-    int on=1;
-#ifdef _WIN32
-    if(setsockopt(*data_sock, SOL_SOCKET, SO_BROADCAST, (const char*)&on, sizeof(on)) < 0)
-#endif
-#ifdef __linux__
-    if(setsockopt(*data_sock, SOL_SOCKET, SO_BROADCAST, &on, sizeof(on)) < 0)
-#endif
-    {
-        perror("broadcast");
-        exit(0);
-    }
     int already_send = 0;
     while(already_send < len)
     {
         int send_time = 0;
         int send_len;
-        //while (1)
-        //{
+
             send_len = getmin(len - already_send, MAX_UDP_PACKET_LEN);
-            int res = sendto(*data_sock, data->get_file_slice() + already_send, send_len, 0, (struct sockaddr*) & serv_addr_data, sizeof(serv_addr_data));
+            int res = send(cmd_sock, data->get_file_slice() + already_send, send_len, 0);
             if (res == -1)
             {
                 perror("send");
                 exit(0);
             }
-            //if (get_ack()) break;
+
 			if (!get_ack()) return false;
-            //++send_time;
-            //if (send_time > SEND_FREQ)return false;
-        //}
+
         already_send += send_len;
     }
     return true;
@@ -212,19 +160,9 @@ bool Client::send_packet(int len)
 int Client::get_offset()
 {
     char buffer[1200];
-    /*#ifdef __linux__
-    socklen_t nSize = sizeof(sockaddr);
-    #endif
-    #ifdef WIN32
-    int nSize = sizeof(sockaddr);
-    #endif*/
 
     int recv_len = -1;
 	recv_len = recv_cmd(buffer, 1200, 5000);
-
-    //while(recv_len==-1)recv_len = recvfrom(cmd_sock, buffer, 1200, 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
-    //int recv_len = recvfrom(cmd_sock, buffer, 1200, 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
-    //if(recv_len == -1) return -1;
 
     if (buffer[0] != 'O' || buffer[1] != 'F' || buffer[2] != 'F' || buffer[3] != 'S') return -1;
     int value = 0;
@@ -272,34 +210,10 @@ int Client::get_offset()
 
 int Client::get_port()
 {
-    /*struct timeval timeout;
-    timeout.tv_sec = 15;
-    timeout.tv_usec = 0;
-    #ifdef __linux__
-    if (setsockopt(cmd_sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) == -1)
-        return -1;
-    #endif
-    #ifdef WIN32
-    if (setsockopt(cmd_sock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout)) == -1)
-        return -1;
-    #endif
-    char buffer[12];
-	memset(buffer, 0, 12 * sizeof(char));
-    #ifdef __linux__
-    socklen_t nSize = sizeof(sockaddr);
-    #endif
-    #ifdef WIN32
-    int nSize = sizeof(sockaddr);
-    #endif
-
-    while (recvfrom(cmd_sock, buffer, 12, 0, (struct sockaddr*) & serv_addr_cmd, &nSize) == -1);
-    //if(recvfrom(cmd_sock, buffer, 12, 0, (struct sockaddr*) & serv_addr_cmd, &nSize) < 0)
-    //    return -1;*/
 
 	char buffer[12];
 	memset(buffer, 0, 12 * sizeof(char));
 	recv_cmd(buffer, 12, 5000);
-
 
     if (buffer[0] != 'P' || buffer[1] != 'O' || buffer[2] != 'R' || buffer[3] != 'T')return -1;
     int value = 0;
@@ -311,53 +225,12 @@ int Client::get_port()
 
 bool Client::get_ack()
 {
-    /*struct timeval timeout;
-    timeout.tv_sec = 15;
-    timeout.tv_usec = 0;
-
-    #ifdef __linux__
-    if (setsockopt(cmd_sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) == -1)
-        return false;
-    #endif
-    #ifdef WIN32
-	if (setsockopt(cmd_sock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout)) == -1)
-		return false;
-    #endif
-	*/
     char num_buffer[4];
     memset(num_buffer, 0, sizeof(num_buffer));
 
-	/*for (int i = 0; i < SEND_FREQ; i++)
-	{*/
 	if (recv_cmd(num_buffer, 4, 10000))
 		return atoi(num_buffer) == data->get_slice_num();
 	else return false;
-	//}
-
-	/*
-    #ifdef __linux__
-    socklen_t nSize = sizeof(sockaddr);
-    #endif
-    #ifdef WIN32
-	int nSize = sizeof(sockaddr);
-    #endif
-    
-
-    for (int i = 0; i < SEND_FREQ; i++)
-    {
-        if (recvfrom(cmd_sock, num_buffer, 4, 0, (struct sockaddr*) & serv_addr_cmd, &nSize) != -1)
-            return atoi(num_buffer) == data->get_slice_num();
-    }
-    return false;*/
-
-
-
-    //while(recvfrom(cmd_sock, num_buffer, 4, 0, (struct sockaddr*) & serv_addr_cmd, &nSize) == -1);
-
-    
-    //if(recvfrom(cmd_sock, num_buffer, 4, 0, (struct sockaddr*)&serv_addr_cmd, &nSize) == -1)
-    //    return false;
-
    
 }
 
@@ -447,14 +320,6 @@ bool Client::send_path_info(char* buffer)
         port = get_port();
         if(port == -1) return false;
 
-        #ifdef _WIN32
-        data_sock = new SOCKET;
-        #endif
-        #ifdef __linux__
-        data_sock = new int;
-        #endif
-        sock_init(data_sock, port, 0);
-
         if (strlen(buffer) > MAX_PACKET_DATA_BYTE_LENGTH)
         {
             for (int i = 0; i < strlen(buffer) / MAX_PACKET_DATA_BYTE_LENGTH + 1; i++)
@@ -466,7 +331,7 @@ bool Client::send_path_info(char* buffer)
                 }
                 for(int k=0;k< SEND_FREQ;k++)
                 {
-                    int res = sendto(*data_sock, paths, strlen(paths) + UPD_HEADER_LENGTH, 0, (struct sockaddr*) & serv_addr_cmd, sizeof(serv_addr_cmd));
+                    int res = send(cmd_sock, paths, strlen(paths) + UPD_HEADER_LENGTH, 0);
                     //UNCOMPLETED!!!Need to determine whether the return is "info"
                     if (res != -1)
                     {
@@ -479,9 +344,8 @@ bool Client::send_path_info(char* buffer)
         }
         else
         {
-            for (int k = 0; k < SEND_FREQ; k++)
-            {
-                int res = sendto(*data_sock, buffer, strlen(buffer), 0, (struct sockaddr*) & serv_addr_data, sizeof(serv_addr_data));
+
+                int res = send(cmd_sock, buffer, strlen(buffer), 0);
                 char ret[64];
                 memset(ret, 0, sizeof(ret));
 
@@ -493,11 +357,8 @@ bool Client::send_path_info(char* buffer)
                 #endif
                 //recvfrom(cmd_sock, ret, 64, 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
 				recv_cmd(ret, 64, 5000);
-                //while (recvfrom(cmd_sock, ret, 64, 0, (struct sockaddr*) & serv_addr_cmd, &nSize) == -1);
                 return !strcmp(ret, "INFO");
-            }
-            std::cout << "Transmission failed, retransmission limit reached" << std::endl;
-            return false;
+            
         }
     }
     else
@@ -577,14 +438,10 @@ bool Client::set_data_port()
 	port = get_port();
 	if (port == -1) return false;
 
-#ifdef _WIN32
-	data_sock = new SOCKET;
-#endif
-#ifdef __linux__
-	data_sock = new int;
-#endif
-	sock_init(data_sock, port, 0);
-
 	delete[]cmd;
 	return true;
+}
+bool Client::tcp_connection()
+{
+    return connect(cmd_sock, (struct sockaddr*) & serv_addr_cmd, sizeof(serv_addr_cmd)) != -1;
 }

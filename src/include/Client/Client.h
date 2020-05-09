@@ -84,6 +84,8 @@ public:
 	#endif
 
 	int recv_cmd(char* buf, int len, int usec);
+
+	bool tcp_connection();
 };
 
 bool init_connect(Client*& client, const char* ip_addr, int port);

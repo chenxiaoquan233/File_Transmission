@@ -7,7 +7,8 @@ Server::Server(char* addr, int port)
 
 Server::~Server()
 {
-
+	closesocket(client_sock);
+	closesocket(cmd_sock);
 }
 
 bool Server::set_listen()
@@ -15,43 +16,35 @@ bool Server::set_listen()
 	#ifdef _WIN32
     WSADATA wsaData;
     WSAStartup(MAKEWORD(2, 2), &wsaData);
-    cmd_sock = socket(AF_INET, SOCK_DGRAM, 0);
+    cmd_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	#endif
 	#ifdef __linux__
-    cmd_sock = socket(AF_INET, SOCK_DGRAM, 0);
+    cmd_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	#endif
     memset(&serv_addr_cmd, 0, sizeof(serv_addr_cmd));
     serv_addr_cmd.sin_family = AF_INET;
     serv_addr_cmd.sin_addr.s_addr = inet_addr(listen_addr);
 	//serv_addr_cmd.sin_addr.s_addr = INADDR_ANY;
     serv_addr_cmd.sin_port = htons(cmd_port);
-	
-    int on = 1;
-
-	#ifdef WIN32
-	if (setsockopt(cmd_sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&on, sizeof(on)) == -1)
-	#endif
-	#ifdef __linux__
-    if(setsockopt(cmd_sock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) == -1)
-	#endif
-	{
-		perror("setsockopt reuse failed!");
-		return false;
-	}
-
-	struct timeval timeout;
-    timeout.tv_sec = 5;
-    timeout.tv_usec = 0;
-    if (setsockopt(cmd_sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout)) == -1) 
-	{
-        perror("setsockopt timeout failed:");
-		return false;
-    }
 
     if(bind(cmd_sock, (struct sockaddr*)&serv_addr_cmd, sizeof(sockaddr)) == -1)
 	{
 		perror("bind failed!");
 		return false;
+	}
+
+
+	listen(cmd_sock, 5);
+
+	while (1)
+	{
+		struct sockaddr_in addr;
+		int len = sizeof(SOCKADDR);
+
+		char buf[1024] = { 0 };
+
+		//接受客户端连接
+		if ((client_sock = accept(cmd_sock, (struct sockaddr*) & addr, &len)) != -1)break;
 	}
 
     return true;
@@ -62,61 +55,10 @@ bool Server::check_port()
 	if(start_port == -1)
 		start_port = cmd_port > 1024 ? cmd_port + 1 : 1024;
 
-	#ifdef _WIN32
-	data_sock = socket(AF_INET, SOCK_DGRAM, 0);
-	#endif
-	#ifdef __linux__
-	data_sock = socket(AF_INET, SOCK_DGRAM, 0);
-	#endif
-
-	memset(&serv_addr_data, 0, sizeof(serv_addr_data));
-	serv_addr_data.sin_family = AF_INET;
-	serv_addr_data.sin_addr.s_addr = htonl(INADDR_ANY);
-	serv_addr_data.sin_port = htons(start_port);
-	#ifdef _WIN32
-	bind(data_sock, (LPSOCKADDR)&serv_addr_data, sizeof(serv_addr_data));
-	while (WSAGetLastError() == WSAEADDRINUSE)
-	{
-		//�˿��ѱ�ռ��
-		//printf("ռ��");
-		start_port++;
-		memset(&serv_addr_data, 0, sizeof(serv_addr_data));
-		serv_addr_data.sin_family = AF_INET;
-		serv_addr_data.sin_addr.s_addr = htonl(INADDR_ANY);
-		serv_addr_data.sin_port = htons(start_port);
-		bind(data_sock, (LPSOCKADDR)&serv_addr_data, sizeof(serv_addr_data));
-	}
-	#endif
-	#ifdef __linux__
-	while (bind(data_sock, (struct sockaddr*) & serv_addr_data, sizeof(sockaddr)) == -1)
-	{
-		start_port++;
-		memset(&serv_addr_data, 0, sizeof(serv_addr_data));
-		serv_addr_data.sin_family = AF_INET;
-		serv_addr_data.sin_addr.s_addr = htonl(INADDR_ANY);
-		serv_addr_data.sin_port = htons(start_port);
-	}
-	#endif
-
-#ifdef __linux__
-	struct timeval timeout;
-    timeout.tv_sec = 5;
-    timeout.tv_usec = 0;
-	if (setsockopt(data_sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout)) == -1)
-#endif
-#ifdef WIN32
-	int timeout = 10000;
-	if (setsockopt(data_sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout)) == -1)
-#endif
-	{
-        perror("setsockopt timeout failed!");
-		return false;
-    }
-
 	char answer_port[12];
 	sprintf(answer_port, "PORT %d", start_port);
 	
-	if(sendto(cmd_sock, answer_port, strlen(answer_port), 0, (struct sockaddr*) & serv_addr_cmd, sizeof(serv_addr_cmd)) < 0)
+	if(send(client_sock, answer_port, strlen(answer_port), 0) < 0)
 	{
 		perror("send");
 		return false;
@@ -141,29 +83,24 @@ bool Server::recv_packet()
 	int already_recv = 0;
 	int pkt_num = 0;
 	
-	//puts("1.1");
 	while(already_recv < MAX_PACKET_DATA_BYTE_LENGTH)
 	{
-		//int res = recvfrom(data_sock, data->get_file_slice() + already_recv, MAX_PACKET_DATA_BYTE_LENGTH, 0, (struct sockaddr*)&serv_addr_data, &nSize);
-		//if(res < 0) return false;
 
 		bool flg = 0;
-		int res = -1;
-		for (int i = 0; i < SEND_FREQ; i++)
-		{
-			res = recvfrom(data_sock, data->get_file_slice() + already_recv, MAX_PACKET_DATA_BYTE_LENGTH, 0, (struct sockaddr*) & serv_addr_data, &nSize);
-			if (res != -1) { flg = 1; break; }
-		}
-		if (!flg)return false;
-		//puts("1.2");
+		int res = recv(client_sock, data->get_file_slice() + already_recv, MAX_UDP_PACKET_LEN, 0);
+		if (res == -1)
+			cout << WSAGetLastError() << endl;
 		if(!already_recv)//the first packet of the file slice
 		{
 			pkt_num = get_ack(data->get_file_slice());
 		}
-		//puts("1.3");
 		already_recv += res;
 		send_ack(pkt_num);
-		if(res < MAX_UDP_PACKET_LEN) break;// the last packet may not meet the max size
+		if (res < MAX_UDP_PACKET_LEN)
+		{
+
+ 			break;// the last packet may not meet the max size
+		}
 	}
 	data->set_slice_len(already_recv);
 	cout<<already_recv<<endl;
@@ -191,22 +128,17 @@ bool Server::recv_whole_file()
 		data_len = 0;
 		memset(file_path, 0, 200 * sizeof(char));
 		file_slice = new char[MAX_PACKET_DATA_BYTE_LENGTH];
-		//puts("1");
 		if(recv_packet())
 		{
-			// parse packet format
-			//puts("2");
 			parse_param(data->get_file_slice(), file_path, &slice_num, file_slice, data->get_slice_len(), &data_len);
 
 			// record as recieved
-			//puts("3");
 			file->pkt_send(slice_num - 1);
 
 			// record on log
 			//write_logfile(file_path, (short)slice_num, sizeof(short));
 
 			// write file slice
-			//puts("4");
 			sprintf(file_name, "%s/%s.%03d", path, file_path, slice_num);
 			checked = 1;
 			brute_create_folder(file_name);
@@ -228,7 +160,7 @@ bool Server::recv_whole_file()
 	{
 		sprintf(file_name, "%s/%s", path, file_path);
 		puts(file_name);
-		thread* new_thread = new thread(mergeFile, file_name, slice_num);
+		thread* new_thread = new thread(mergeFile, file_name, file->get_tot_num(), MAX_PACKET_DATA_BYTE_LENGTH);
 		threads.push_back(new_thread);
 	}
 	return true;
@@ -257,7 +189,7 @@ bool Server::send_ack(int num)
 	char ack[4];
 	//printf("packet %d get\n", num);
 	sprintf(ack, "%d", num);
-	int res = sendto(cmd_sock, ack, strlen(ack), 0, (struct sockaddr*) & serv_addr_cmd, sizeof(serv_addr_cmd));
+	int res = send(client_sock, ack, strlen(ack), 0);
 	return res != -1;
 }
 
@@ -408,10 +340,7 @@ bool Server::parse_path()
 	int nSize = sizeof(sockaddr);
 	#endif
 
-	//if(recvfrom(data_sock, buf, 256 * sizeof(char), 0, (struct sockaddr*) & serv_addr_data, &nSize) < 0)
-	//	return false;
-
-	while (recvfrom(data_sock, buf, 256 * sizeof(char), 0, (struct sockaddr*) & serv_addr_data, &nSize) < 0);
+	recv(client_sock, buf, 256 * sizeof(char), 0);
 
 	int pos = 0;
 	while(pos < strlen(buf))
@@ -425,7 +354,7 @@ bool Server::parse_path()
 	}
 	
 	sprintf(r_cmd, "%s", "INFO");
-	int res = sendto(cmd_sock, r_cmd, 4, 0, (struct sockaddr*) & serv_addr_cmd, sizeof(serv_addr_cmd));
+	int res = send(client_sock, r_cmd, 4, 0);
 	return res != -1;
 }
 
@@ -444,7 +373,7 @@ void Server::parse_cmd()
 
 	int res = -1;
 
-	while(res==-1)res = recvfrom(cmd_sock, cmd, 256 * sizeof(char), 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
+	res = recv(client_sock, cmd, 256 * sizeof(char), 0);
 	//res = recvfrom(cmd_sock, cmd, 256 * sizeof(char), 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
 	if(res == -1) return;
 	puts("CMD:");
@@ -493,7 +422,7 @@ void Server::parse_cmd()
 	}
 	else if (cmd[0] == 'O' && cmd[1] == 'N')
 	{
-		sendto(cmd_sock, "1", 1, 0, (struct sockaddr*) & serv_addr_cmd, sizeof(serv_addr_cmd));
+		send(client_sock, "1", 1, 0);
 	}
 	return;
 }
@@ -611,7 +540,7 @@ bool Server::check_file(char* file_name, int file_len, int pkt_num)
 	{
 		char offset[256];
 		sprintf(offset, "OFFS %d", pkt_num);
-		sendto(cmd_sock, offset, strlen(offset), 0, (struct sockaddr*) & serv_addr_cmd, sizeof(serv_addr_cmd));
+		send(client_sock, offset, strlen(offset), 0);
 		remove(logfile_path);
 		return false;
 	}
@@ -631,27 +560,31 @@ bool Server::check_file(char* file_name, int file_len, int pkt_num)
 	sprintf(offset, "OFFS %d", need_send);
 	for (int i = 0; i < need_send; ++i)
 		sprintf(offset, "%s %d", offset, need_send_num[i]);
-	if (sendto(cmd_sock, offset, strlen(offset), 0, (struct sockaddr*) & serv_addr_cmd, sizeof(serv_addr_cmd)) < 0)
+	if (send(client_sock, offset, strlen(offset), 0) < 0)
 		perror("offset");
 	delete(need_send_num);
 	return true;
 
 }
 
-void mergeFile(char* fileaddress, int package)
+void mergeFile(char* fileaddress, int package,int max_pck_sze)
 {
-    int filelen = strlen(fileaddress);
+    
+	int filelen = strlen(fileaddress);
 	cout<<fileaddress<<' '<<filelen<<endl;
 
-    char* buffaddress;
+    char* buffaddress,*buf;
 	if ((buffaddress = (char*)malloc(sizeof(char) * (filelen + 5))) == NULL)
 	{
 		puts("memory not available"); return;
 	}
-
+	if ((buf = (char*)malloc(sizeof(char) * (max_pck_sze + 5))) == NULL)
+	{
+		puts("memory not available"); return;
+	}
     FILE* dst, * src;
 
-	if ((dst = fopen(fileaddress, "wb")) == NULL)
+	if ((dst = fopen(fileaddress, "wb+")) == NULL)
 	{
 		puts("cannot create file"); return;
 	}
@@ -663,20 +596,27 @@ void mergeFile(char* fileaddress, int package)
 		{
 			puts("file not existss"); return;
 		}
-		char sub;
-
-        while (!feof(src))
-        {
-            sub = fgetc(src);
-            if (!feof(src))fputc(sub, dst);
-        }
+		int sze = get_filesize(buffaddress);
+		fread(buf, sze, 1, src);
+		fwrite(buf, sze, 1, dst);
         fclose(src);
         remove(buffaddress);
     }
     fclose(dst);
+	delete(buffaddress);
+	delete(buf);
 	return;
 }
+int get_filesize(char* filename)
+{
+		FILE* fp = fopen(filename, "r");
+		if (!fp) return -1;
+		fseek(fp, 0L, SEEK_END);
+		int size = ftell(fp);
+		fclose(fp);
 
+		return size;
+}
 int Server::get_ack(char* data)
 {
 	//puts(data);

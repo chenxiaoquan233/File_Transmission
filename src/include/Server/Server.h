@@ -1,7 +1,7 @@
 #include "../base.h"
 #include "../file.h"
 #include "../packet_load.h"
-
+#include "../base.h"
 class Server : public base
 {
 private:
@@ -18,10 +18,12 @@ private:
 	char* buffer = nullptr;
 #ifdef _WIN32
     SOCKET cmd_sock;
+	SOCKET client_sock;
 	SOCKET data_sock;
 #endif
 #ifdef __linux__
 	int cmd_sock;
+	int client_sock;
 	int data_sock;
 #endif
 public:
@@ -91,7 +93,10 @@ public:
 	void set_path(char* path);
 
 	void brute_create_folder(string a);
-};
 
-//combine file slice
-void mergeFile(char* file_path, int slice_num);
+	//combine file slice
+
+};
+void mergeFile(char* file_path, int slice_num, int max_pck_sze);
+int get_filesize(char* filename);
+
