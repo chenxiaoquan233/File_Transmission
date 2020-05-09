@@ -94,6 +94,7 @@ bool Client::read_file_slice(const char* input_file_name)
     //continue from previous point
     FILE* file_ptr = file->get_file();
     int file_offset = file->get_base_offset() + (slice_num - 1) * file->get_slice_len();
+	if (file_offset != 0) file_offset += header_len;
     fseek(file_ptr, file_offset, SEEK_SET);
 
     int header_offset = file->get_offset();
