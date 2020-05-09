@@ -11,6 +11,7 @@ private:
 	sockaddr_in serv_addr_cmd;
 	sockaddr_in serv_addr_data;
 	int cmd_port;
+	int start_port = -1;
 	File* file;
 	vector<thread*> threads;
 	//shore the received data for a short time
@@ -88,6 +89,8 @@ public:
 	int get_ack(char* data);
 
 	void set_path(char* path);
+
+	void brute_create_folder(string a);
 };
 
 //combine file slice

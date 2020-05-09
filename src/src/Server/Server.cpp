@@ -59,7 +59,8 @@ bool Server::set_listen()
 
 bool Server::check_port() 
 {
-	static int start_port = cmd_port > 1024 ? cmd_port + 1 : 1024;
+	if(start_port == -1)
+		start_port = cmd_port > 1024 ? cmd_port + 1 : 1024;
 
 	#ifdef _WIN32
 	data_sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -134,6 +135,7 @@ bool Server::recv_packet()
 	int already_recv = 0;
 	int pkt_num = 0;
 	
+	//puts("1.1");
 	while(already_recv < MAX_PACKET_DATA_BYTE_LENGTH)
 	{
 		//int res = recvfrom(data_sock, data->get_file_slice() + already_recv, MAX_PACKET_DATA_BYTE_LENGTH, 0, (struct sockaddr*)&serv_addr_data, &nSize);
@@ -147,11 +149,12 @@ bool Server::recv_packet()
 			if (res != -1) { flg = 1; break; }
 		}
 		if (!flg)return false;
-
+		//puts("1.2");
 		if(!already_recv)//the first packet of the file slice
 		{
 			pkt_num = get_ack(data->get_file_slice());
 		}
+		//puts("1.3");
 		already_recv += res;
 		send_ack(pkt_num);
 		if(res < MAX_UDP_PACKET_LEN) break;// the last packet may not meet the max size
@@ -182,19 +185,22 @@ bool Server::recv_whole_file()
 		data_len = 0;
 		memset(file_path, 0, 200 * sizeof(char));
 		file_slice = new char[MAX_PACKET_DATA_BYTE_LENGTH];
-
+		//puts("1");
 		if(recv_packet())
 		{
 			// parse packet format
+			//puts("2");
 			parse_param(data->get_file_slice(), file_path, &slice_num, file_slice, data->get_slice_len(), &data_len);
 
 			// record as recieved
+			//puts("3");
 			file->pkt_send(slice_num - 1);
 
 			// record on log
 			//write_logfile(file_path, (short)slice_num, sizeof(short));
 
 			// write file slice
+			//puts("4");
 			sprintf(file_name, "%s/%s.%03d", path, file_path, slice_num);
 			checked = 1;
 			brute_create_folder(file_name);
@@ -208,7 +214,7 @@ bool Server::recv_whole_file()
 		}
 		delete file_slice;
 	}
-
+	puts("here");
 	end_t = clock();
 	printf("recv time: %f\n", ((double)(end_t - start_t) / CLOCKS_PER_SEC));
 
@@ -407,7 +413,9 @@ bool Server::parse_path()
 		char addr[64];
 		sscanf(buf + pos, "%s", addr);
 		pos += strlen(addr) + sizeof('\n');
-		set_dir(addr);
+		char * abs_path = new char[1000];
+		sprintf(abs_path, "%s/%s", path, addr);
+		set_dir(abs_path);
 	}
 	
 	sprintf(r_cmd, "%s", "INFO");
@@ -681,7 +689,7 @@ void Server::set_path(char* path)
 {
 	this->path = path;
 }
-void brute_create_folder(string a)
+void Server::brute_create_folder(string a)
 {
 	string b = a;
 	while (b.back() != '/')b.pop_back();
@@ -698,6 +706,6 @@ void brute_create_folder(string a)
 	_mkdir(b.c_str());
 #endif
 #ifdef __linux__
-	mkdir(b.c_str());
+	mkdir(b.c_str(), 777);
 #endif
 }
