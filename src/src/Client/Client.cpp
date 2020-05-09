@@ -57,7 +57,7 @@ bool Client::read_file_slice(const char* input_file_name)
 {
     if(data) delete data;//data equals nullptr the first time, but not after
     data = new pkt_load();
-
+	cout << "a slice" << endl;
     if(!data->create_file_slice(MAX_PACKET_DATA_BYTE_LENGTH))
         return false;
 
@@ -70,16 +70,19 @@ bool Client::read_file_slice(const char* input_file_name)
     
     //continue from previous point
     FILE* file_ptr = file->get_file();
-    int file_offset = file->get_base_offset() + (slice_num - 1) * file->get_slice_len();
-	if (file_offset != 0) file_offset += header_len;
-    fseek(file_ptr, file_offset, SEEK_SET);
+    //fpos_t file_offset = file->get_base_offset() + static_cast<long long>((slice_num - 1)) * file->get_slice_len();
+    fpos_t file_offset = file->get_base_offset() + static_cast<long long>((slice_num - 1)) * (MAX_PACKET_DATA_BYTE_LENGTH - header_len);
+	//if (file_offset != 0) file_offset += header_len;
+    //fseek(file_ptr, file_offset, SEEK_SET);
+	fsetpos(file_ptr, &file_offset);
+	cout << file_offset << endl;
 
     int header_offset = file->get_offset();
     
     //res = fread(data->get_file_slice() + header_offset, 1, MAX_PACKET_DATA_BYTE_LENGTH - header_offset, file_ptr);
     res = fread(data->get_file_slice() + header_len, 1, MAX_PACKET_DATA_BYTE_LENGTH - header_len, file_ptr);
-    
     data->set_slice_len(res + header_len);
+	cout << res << endl;
     return res;
 }
 
@@ -136,7 +139,7 @@ bool Client::set_port(int* sock, int port, int is_cmd)
 }
 bool Client::send_packet(int len)
 {
-    int already_send = 0;
+    long long already_send = 0;
     while(already_send < len)
     {
         int send_time = 0;

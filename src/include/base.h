@@ -42,7 +42,7 @@ class base
 {
 protected:
 	const int MAX_UDP_PACKET_LEN = 1050;
-	const int MAX_PACKET_DATA_BYTE_LENGTH = 50 * 1024 * 1024;
+	const int MAX_PACKET_DATA_BYTE_LENGTH = 2 * 1024 * 1024;
 	const int UPD_HEADER_LENGTH = 19;
 	const int SEND_FREQ = 10;
 public:

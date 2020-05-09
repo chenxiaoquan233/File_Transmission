@@ -96,7 +96,7 @@ void File::cal_pkt_num(int pkt_len)
     pkt_num = ceil((double)file_len / slice_len);
 }
 
-int File::get_offset()
+long long File::get_offset()
 {
     return offset;
 }
