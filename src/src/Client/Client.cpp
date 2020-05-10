@@ -316,7 +316,7 @@ int Client::read_path(const char* path, char* path_info_buf, char** file_info_bu
 
 bool Client::send_path_info(char* buffer)
 {
-    delete(buffer);
+    delete[]buffer;
     buffer = new char[3];
     buffer[0] = 't'; buffer[1] = '\0';
     if(strlen(buffer))
@@ -338,6 +338,7 @@ bool Client::send_path_info(char* buffer)
                     paths[j] = buffer[i * MAX_PACKET_DATA_BYTE_LENGTH + j];
                 }
                     int res = send(cmd_sock, paths, strlen(paths) + UPD_HEADER_LENGTH, 0);
+                    delete(paths);
                     if (res != -1)
                     {
                         return true;
@@ -361,6 +362,7 @@ bool Client::send_path_info(char* buffer)
                 #endif
                 //recvfrom(cmd_sock, ret, 64, 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
 				recv_cmd(ret, 64, 5000);
+                delete(buffer);
                 return !strcmp(ret, "INFO");
         }
     }
@@ -379,52 +381,6 @@ int* Client::get_cmd_sock()
 {
     return &cmd_sock;
 }
-
-/*bool init_connect(Client*& client, const char* ip_addr, int port)
-{
-    client = new Client(ip_addr);
-    client->sock_init(client->get_cmd_sock(), port, 1);
-    client->send_cmd("ON");
-    char buf[5];
-    memset(buf, 0, 5 * sizeof(char));
-    if(!client->recv_cmd(buf, 1, 500))
-        return false;
-    return !strcmp(buf, "1");
-}
-
-bool start_send(Client*& client, const char* file_path, bool dir_flag)
-{
-    if(dir_flag)
-    {
-        char* file_info[100];
-        for (int i = 0; i < 100; i++)
-        {
-            file_info[i] = new char[1000];
-            memset(file_info[i], 0, 1000);
-        }
-        char* path_info = new char[10000];
-        memset(path_info, 0, 10000 * sizeof(char));
-        int file_number = 0;
-        client->read_path(file_path, path_info, file_info, file_number);
-        cout<<file_number<<endl;
-        if(client->send_path_info(path_info))
-        {
-            int len = strlen(file_path) + 1;
-            for(int i = 0; i < file_number; ++i)
-            {
-                if(!client->send_file(file_info[i], len))
-                    return false;
-            }
-        }
-        else return false;
-    }
-    else
-    {
-        if(!client->send_file(file_path, 0))
-            return false;
-    }
-    return true;
-}*/
 
 bool Client::set_data_port()
 {

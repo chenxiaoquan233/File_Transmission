@@ -172,6 +172,7 @@ bool Server::recv_whole_file()
 			
 
 	}
+	delete(file_path);
 	return true;
 }
 
@@ -332,15 +333,16 @@ int Server::set_dir(char* path)
 		}
 	}
 	#endif
+	delete(tmpDirPath);
 	return 0;//Create success
 }
 
 bool Server::parse_path()
 {
 	char buf[1050];
-	char* r_cmd = new char[4];
-	memset(r_cmd, 0, 4);
-	memset(buf, 0, 1050);
+	char r_cmd[10];
+	memset(r_cmd, 0, sizeof(r_cmd));
+	memset(buf, 0, sizeof(buf));
 
 	#ifdef __linux__
 	socklen_t nSize = sizeof(sockaddr);
@@ -455,6 +457,7 @@ void Server::parse_cmd()
 	{
 		send(client_sock, "1", 1, 0);
 	}
+	delete(cmd);
 	return;
 }
 
@@ -471,68 +474,6 @@ bool Server::write_logfile(char* path, int number, int size)
 
 bool Server::check_file(char* file_name, int file_len, int pkt_num) 
 {
-	/*
-	char* logfile_path = new char[200];
-	sprintf(logfile_path, "%s.FTlog", file_name);
-	FILE* logfile;
-
-	logfile = fopen(logfile_path, "rb");
-	if (logfile) 
-	{
-		short total_packet_num = 0;
-		int log_file_length = 0;
-
-		fread(&total_packet_num, sizeof(short), 1, logfile);
-		fread(&log_file_length, sizeof(int), 1, logfile);
-
-		if (log_file_length == file_len) 
-		{
-			bool* loaded_pack_num = new bool[total_packet_num];
-			for (int i = 0; i < total_packet_num; i++)
-				loaded_pack_num[i] = false;
-				
-			int total_loaded_pack_num = 0;
-			int temp = 0;
-			while(!feof(logfile))
-			{
-				fread(&temp, sizeof(short), 1, logfile);
-				if(!loaded_pack_num[temp])
-				{
-					loaded_pack_num[temp] = true;
-					total_loaded_pack_num++;
-				}
-			}
-			int need_send = total_packet_num - total_loaded_pack_num;
-			printf("need_send:%d\n",need_send);
-			int *need_send_num = new int[need_send];
-			for (int i = 0, j = 0; i < total_packet_num; i++) 
-			{
-				if (loaded_pack_num[i] == false) 
-				{
-					need_send_num[j] = i;
-					j++;
-				}
-				else file->pkt_send(i);
-			}
-			
-			char* offset = new char[3000];
-			sprintf(offset, "OFFS %d", need_send);
-			for(int i = 0; i < need_send; ++i)
-				sprintf(offset, "%s %d", offset, need_send_num[i]);
-			if(sendto(cmd_sock, offset, strlen(offset), 0,(struct sockaddr*) & serv_addr_cmd, sizeof(serv_addr_cmd))<0)
-				perror("offset");
-			fclose(logfile);
-			delete(need_send_num);
-			return true;
-		}
-	}
-	char offset[256];
-	sprintf(offset, "OFFS %d", pkt_num);
-	sendto(cmd_sock, offset, strlen(offset), 0,(struct sockaddr*) & serv_addr_cmd, sizeof(serv_addr_cmd));
-	remove(logfile_path);
-	return false;
-	*/
-
 
 	bool* loaded_pack_num = new bool[pkt_num];
 	for (int i = 0; i < pkt_num; i++)
@@ -593,7 +534,9 @@ bool Server::check_file(char* file_name, int file_len, int pkt_num)
 		sprintf(offset, "%s %d", offset, need_send_num[i]);
 	if (send(client_sock, offset, strlen(offset), 0) < 0)
 		perror("offset");
-	delete(need_send_num);
+	delete[]need_send_num;
+	delete(loaded_pack_num);
+	delete(logfile_path);
 	return true;
 
 }
@@ -641,8 +584,8 @@ void mergeFile(char* fileaddress, int package,int max_pck_sze)
         remove(buffaddress);
     }
     fclose(dst);
-	delete(buffaddress);
-	delete(buf);
+	delete[]buffaddress;
+	delete[]buf;
 	delete(fileaddress);
 	return;
 }

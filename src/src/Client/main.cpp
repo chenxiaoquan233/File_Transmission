@@ -98,7 +98,6 @@ int main(int argc, char** argv)
         m.show();
         return app.exec();
     }
-    
     return 0;
 }
 
@@ -127,11 +126,11 @@ bool start_send(Client*& client, const char* file_path, bool dir_flag)
 	client->set_data_port();
     if(dir_flag)
     {
-        char* file_info[2000];
-        for (int i = 0; i < 2000; i++)
+        char* file_info[1200];
+        for (int i = 0; i < 1200; i++)
         {
-            file_info[i] = new char[2000];
-            memset(file_info[i], 0, 2000);
+            file_info[i] = new char[1000];
+            memset(file_info[i], 0, 1000);
         }
         char* path_info = new char[10000];
         memset(path_info, 0, 10000 * sizeof(char));
@@ -144,8 +143,10 @@ bool start_send(Client*& client, const char* file_path, bool dir_flag)
             int len = strlen(file_path) + 1;
             for(int i = 0; i < file_number; ++i)
             {
-                if(!client->send_file(file_info[i], len))
+                if (!client->send_file(file_info[i], len))
+                {
                     return false;
+                }
             }
         }
         else return false;

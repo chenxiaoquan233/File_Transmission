@@ -35,9 +35,9 @@ File::~File()
 	if (file_ptr)
 		fclose(file_ptr);
 	if (send_rec)
-		delete[]send_rec;
+		delete(send_rec);
 	if (file_path)
-		delete[]file_path;
+		delete(file_path);
 }
 
 int File::get_tot_num()
