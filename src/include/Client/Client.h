@@ -7,7 +7,7 @@
 class Client : public base
 {
 private:
-	File* file;
+	File* file = nullptr;
 	pkt_load* data = nullptr;
 	sockaddr_in serv_addr_cmd;
 	sockaddr_in serv_addr_data;

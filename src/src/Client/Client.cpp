@@ -27,6 +27,7 @@ int Client::recv_cmd(char* buf, int len, int usec)
 
 bool Client::send_file(const char* input_file_name, int path_offs)
 {
+	if (file) file->~File();
     file = new File(input_file_name, MAX_PACKET_DATA_BYTE_LENGTH, 0);
     char* cmd = nullptr;
 	cmd = new char[MAX_PACKET_DATA_BYTE_LENGTH];

@@ -3,6 +3,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <iostream>
+#include <errno.h>
 #include "../include/file.h"
 
 using namespace std;
@@ -29,7 +30,15 @@ File::File(const char* input_file, int pkt_len, int offset)
     base_offset = offset;
 }
 
-File::~File(){}
+File::~File()
+{
+	if (file_ptr)
+		fclose(file_ptr);
+	if (send_rec)
+		delete[]send_rec;
+	if (file_path)
+		delete[]file_path;
+}
 
 int File::get_tot_num()
 {
