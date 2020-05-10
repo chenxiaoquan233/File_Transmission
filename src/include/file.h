@@ -35,4 +35,5 @@ public:
     int get_base_offset();
     void get_send_rec();
     int  get_tot_num();
+    const char* get_file_path();
 };

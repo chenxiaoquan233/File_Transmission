@@ -117,16 +117,16 @@ bool Server::recv_whole_file()
 	int total_length; // the whole length of the received file
 
 	int slice_num = 0;
-	char* file_path = new char[200];
+	char* file_path = new char[500];
 	char* file_slice;
 	int data_len = 0;
-	char* file_name = new char[200];
+	char* file_name = new char[500];
 	bool checked = 0;
 	while(!(file->eof()))
 	{
 		slice_num = 0;
 		data_len = 0;
-		memset(file_path, 0, 200 * sizeof(char));
+		memset(file_path, 0, 500 * sizeof(char));
 		file_slice = new char[MAX_PACKET_DATA_BYTE_LENGTH];
 		if(recv_packet())
 		{
@@ -152,16 +152,25 @@ bool Server::recv_whole_file()
 		}
 		delete file_slice;
 	}
+
 	puts("here");
 	end_t = clock();
 	printf("recv time: %f\n", ((double)(end_t - start_t) / CLOCKS_PER_SEC));
-
 	if (checked)
 	{
 		sprintf(file_name, "%s/%s", path, file_path);
 		puts(file_name);
 		thread* new_thread = new thread(mergeFile, file_name, file->get_tot_num(), MAX_PACKET_DATA_BYTE_LENGTH);
 		threads.push_back(new_thread);
+		
+	}
+	else 
+	{
+		sprintf(file_name, "%s", file->get_file_path());
+		thread* new_thread = new thread(mergeFile, file_name, file->get_tot_num(), MAX_PACKET_DATA_BYTE_LENGTH);
+		threads.push_back(new_thread);
+			
+
 	}
 	return true;
 }
@@ -627,6 +636,7 @@ void mergeFile(char* fileaddress, int package,int max_pck_sze)
     fclose(dst);
 	delete(buffaddress);
 	delete(buf);
+	delete(fileaddress);
 	return;
 }
 int get_filesize(char* filename)

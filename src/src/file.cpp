@@ -136,3 +136,7 @@ void File::get_send_rec()
         printf("%d ", send_rec[i]);
     puts("");
 }
+const char* File::get_file_path()
+{
+    return this->file_path;
+}
