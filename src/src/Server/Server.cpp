@@ -615,6 +615,13 @@ void mergeFile(char* fileaddress, int package,int max_pck_sze)
 	}
     FILE* dst, * src;
 
+#ifdef WIN32
+	if (_access(fileaddress, 0) == 0) { delete(fileaddress); return; }
+#endif
+#ifdef __linux__
+	if (access(fileaddress, 0) == 0) { delete(fileaddress); return; }
+#endif
+
 	if ((dst = fopen(fileaddress, "wb+")) == NULL)
 	{
 		puts("cannot create file"); return;
