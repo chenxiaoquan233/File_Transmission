@@ -328,10 +328,10 @@ int Server::set_dir(char* path)
 
 bool Server::parse_path()
 {
-	char buf[256];
+	char buf[1000];
 	char* r_cmd = new char[4];
 	memset(r_cmd, 0, 4);
-	memset(buf, 0, 256);
+	memset(buf, 0, 1000);
 
 	#ifdef __linux__
 	socklen_t nSize = sizeof(sockaddr);
@@ -340,12 +340,12 @@ bool Server::parse_path()
 	int nSize = sizeof(sockaddr);
 	#endif
 
-	recv(client_sock, buf, 256 * sizeof(char), 0);
+	recv(client_sock, buf, 1000 * sizeof(char), 0);
 
 	int pos = 0;
 	while(pos < strlen(buf))
 	{
-		char addr[64];
+		char addr[1000];
 		sscanf(buf + pos, "%s", addr);
 		pos += strlen(addr) + sizeof('\n');
 		char * abs_path = new char[1000];
@@ -360,8 +360,8 @@ bool Server::parse_path()
 
 void Server::parse_cmd()
 {
-	char* cmd = new char[256];
-	memset(cmd, 0, 256);
+	char* cmd = new char[1000];
+	memset(cmd, 0, 1000);
 
 	#ifdef __linux__
 	socklen_t nSize = sizeof(sockaddr);
@@ -373,7 +373,7 @@ void Server::parse_cmd()
 
 	int res = -1;
 
-	res = recv(client_sock, cmd, 256 * sizeof(char), 0);
+	res = recv(client_sock, cmd, 1000 * sizeof(char), 0);
 	//res = recvfrom(cmd_sock, cmd, 256 * sizeof(char), 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
 	if(res == -1) return;
 	puts("CMD:");
@@ -388,11 +388,33 @@ void Server::parse_cmd()
 		int i = 5;
 		int file_len = 0;
 		int tot_pkt_num = 0;
-		char* file_name = new char[100];
-		memset(file_name, 0, 100);
+		char* file_name = new char[1000];
+		memset(file_name, 0, 1000);
 
 		// SEND filename pkt_num file_length
-		while(i < strlen(cmd) && cmd[i] != ' ')
+		i = strlen(cmd) - 1;
+		int base = 1;
+		while (cmd[i] != ' ')
+		{
+			file_len += base * (cmd[i--] - '0');
+			base *= 10;
+		}
+		i--;
+		base = 1;
+		while (cmd[i] != ' ')
+		{
+			tot_pkt_num += base * (cmd[i--] - '0');
+			base *= 10;
+		}
+		i--;
+		for (int j = 5; j <= i; ++j)
+		{
+			file_name[j - 5] = cmd[j];
+		}
+
+
+
+		/*while(i < strlen(cmd) && cmd[i] != ' ')
 			file_name[i - 5] = cmd[i], i++;
 		i++;
 		while(i < strlen(cmd) && cmd[i] != ' ')
@@ -401,10 +423,10 @@ void Server::parse_cmd()
 		while(i < strlen(cmd) && cmd[i] != ' ')
 		{
 			file_len *= 10, file_len += cmd[i++] - '0';
-		}
+		}*/
 
-		char* send_file_name = new char[100];
-		memset(send_file_name, 0, 100);
+		char* send_file_name = new char[1000];
+		memset(send_file_name, 0, 1000);
 		sprintf(send_file_name, "%s/%s", path, file_name);
 		file = new File(send_file_name, tot_pkt_num);
 		if(!check_file(send_file_name, file_len, tot_pkt_num)) 
