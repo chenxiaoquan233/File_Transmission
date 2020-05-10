@@ -342,7 +342,7 @@ bool Server::parse_path()
 
 	recv(client_sock, buf, 1000 * sizeof(char), 0);
 
-	int pos = 0;
+	/*int pos = 0;
 	while(pos < strlen(buf))
 	{
 		char addr[1000];
@@ -350,8 +350,8 @@ bool Server::parse_path()
 		pos += strlen(addr) + sizeof('\n');
 		char * abs_path = new char[1000];
 		sprintf(abs_path, "%s/%s", path, addr);
-		set_dir(abs_path);
-	}
+		//set_dir(abs_path);
+	}*/
 	
 	sprintf(r_cmd, "%s", "INFO");
 	int res = send(client_sock, r_cmd, 4, 0);
