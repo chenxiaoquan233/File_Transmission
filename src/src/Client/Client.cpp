@@ -243,7 +243,7 @@ int Client::read_path(const char* path, char* path_info_buf, char** file_info_bu
     #ifdef WIN32
     intptr_t handle;
     _finddata_t findData;
-    char* dir = new char[1000];
+    char* dir = new char[2000];
     strcpy(dir, path);
     dir = strcat(dir, "/*.*");
     handle = _findfirst(dir, &findData);
@@ -316,32 +316,32 @@ int Client::read_path(const char* path, char* path_info_buf, char** file_info_bu
 
 bool Client::send_path_info(char* buffer)
 {
+    delete(buffer);
+    buffer = new char[3];
+    buffer[0] = 't'; buffer[1] = '\0';
     if(strlen(buffer))
     {
+        int p = strlen(buffer);
         char info[6] = "INFO";
         send_cmd(info);
         int port = -1;
         port = get_port();
         if(port == -1) return false;
 
-        if (strlen(buffer) > MAX_PACKET_DATA_BYTE_LENGTH)
+        if (p > MAX_PACKET_DATA_BYTE_LENGTH)
         {
-            for (int i = 0; i < strlen(buffer) / MAX_PACKET_DATA_BYTE_LENGTH + 1; i++)
+            for (int i = 0; i < p / MAX_PACKET_DATA_BYTE_LENGTH + 1; i++)
             {
                 char* paths = new char[MAX_PACKET_DATA_BYTE_LENGTH];
                 for (int j = 0; j < MAX_PACKET_DATA_BYTE_LENGTH; j++)
                 {
                     paths[j] = buffer[i * MAX_PACKET_DATA_BYTE_LENGTH + j];
                 }
-                for(int k=0;k< SEND_FREQ;k++)
-                {
                     int res = send(cmd_sock, paths, strlen(paths) + UPD_HEADER_LENGTH, 0);
-                    //UNCOMPLETED!!!Need to determine whether the return is "info"
                     if (res != -1)
                     {
                         return true;
                     }
-                }
                 std::cout << "Transmission failed, retransmission limit reached" << std::endl;
                 return false;
             }
@@ -362,7 +362,6 @@ bool Client::send_path_info(char* buffer)
                 //recvfrom(cmd_sock, ret, 64, 0, (struct sockaddr*) & serv_addr_cmd, &nSize);
 				recv_cmd(ret, 64, 5000);
                 return !strcmp(ret, "INFO");
-            
         }
     }
     else

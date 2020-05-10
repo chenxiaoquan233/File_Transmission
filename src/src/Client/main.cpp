@@ -127,11 +127,11 @@ bool start_send(Client*& client, const char* file_path, bool dir_flag)
 	client->set_data_port();
     if(dir_flag)
     {
-        char* file_info[1000];
-        for (int i = 0; i < 1000; i++)
+        char* file_info[2000];
+        for (int i = 0; i < 2000; i++)
         {
-            file_info[i] = new char[1000];
-            memset(file_info[i], 0, 1000);
+            file_info[i] = new char[2000];
+            memset(file_info[i], 0, 2000);
         }
         char* path_info = new char[10000];
         memset(path_info, 0, 10000 * sizeof(char));

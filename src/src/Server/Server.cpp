@@ -337,10 +337,10 @@ int Server::set_dir(char* path)
 
 bool Server::parse_path()
 {
-	char buf[1000];
+	char buf[1050];
 	char* r_cmd = new char[4];
 	memset(r_cmd, 0, 4);
-	memset(buf, 0, 1000);
+	memset(buf, 0, 1050);
 
 	#ifdef __linux__
 	socklen_t nSize = sizeof(sockaddr);
@@ -349,7 +349,7 @@ bool Server::parse_path()
 	int nSize = sizeof(sockaddr);
 	#endif
 
-	recv(client_sock, buf, 1000 * sizeof(char), 0);
+	recv(client_sock, buf, 1050 * sizeof(char), 0);
 
 	/*int pos = 0;
 	while(pos < strlen(buf))
